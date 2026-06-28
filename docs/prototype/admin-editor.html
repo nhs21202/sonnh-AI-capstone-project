@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit bar · Announcement Bar App</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-topbar">
+      <div class="brand">
+        <span class="logo">A</span>
+        <span class="name">Announcement Bar App<small>Shopify admin</small></span>
+      </div>
+      <div class="spacer"></div>
+      <span class="shop-pill">demo-shop.myshopify.com</span>
+    </header>
+
+    <main class="page">
+      <!-- Contextual save bar (pinned, dirty state visible) -->
+      <div class="save-bar">
+        <span class="dirty-dot"></span>
+        <span class="save-msg">Unsaved changes<small>Edit the fields below — the preview updates live.</small></span>
+        <div class="spacer"></div>
+        <button class="btn btn-discard btn-sm">Discard</button>
+        <button class="btn btn-primary btn-sm">Save</button>
+      </div>
+
+      <div class="page-head">
+        <div>
+          <a href="admin-list.html" class="back">&larr; Announcement bars</a>
+          <h1>Edit bar</h1>
+        </div>
+      </div>
+
+      <div class="editor-cols">
+
+        <!-- LEFT: settings -->
+        <div class="editor-main">
+
+        <!-- Bar basics -->
+        <section class="card">
+          <div class="card-head"><h3>Bar settings</h3></div>
+          <div class="card-body">
+            <form class="form" onsubmit="return false;">
+              <div class="field">
+                <label>Title <span class="req">*</span></label>
+                <input class="control" type="text" value="Summer Flash Sale" />
+                <span class="hint">Internal label only — shown in your admin list, never on the storefront.</span>
+              </div>
+
+              <div class="toggle-row">
+                <label class="switch">
+                  <input type="checkbox" checked />
+                  <span class="track"></span><span class="thumb"></span>
+                </label>
+                <div class="toggle-text">
+                  <b>Enabled (active on storefront)</b>
+                  <p>Enabling this deactivates the others — at most one bar can be active per shop.</p>
+                </div>
+              </div>
+
+              <div class="field">
+                <label>Message <span class="req">*</span></label>
+                <textarea class="control" id="msgInput" oninput="document.getElementById('previewMsg').textContent = this.value || 'Your message';">Summer sale — up to 50% off. Ends soon!</textarea>
+                <span class="hint">1–200 characters. This is the text shown on the bar.</span>
+              </div>
+
+              <div class="form-row">
+                <div class="field color-field">
+                  <label>Background color <span class="req">*</span></label>
+                  <div class="color-input">
+                    <span class="swatch" id="bgSwatch" style="background:#1A1A1A;"></span>
+                    <input class="control hex" id="bgHex" type="text" value="#1A1A1A"
+                           oninput="document.getElementById('bgSwatch').style.background=this.value; document.getElementById('previewBar').style.background=this.value;" />
+                  </div>
+                  <span class="hint">Hex, e.g. #1A1A1A.</span>
+                </div>
+                <div class="field color-field">
+                  <label>Text color <span class="req">*</span></label>
+                  <div class="color-input">
+                    <span class="swatch" id="textSwatch" style="background:#FFFFFF;"></span>
+                    <input class="control hex" id="textHex" type="text" value="#FFFFFF"
+                           oninput="document.getElementById('textSwatch').style.background=this.value; document.getElementById('previewBar').style.color=this.value;" />
+                  </div>
+                  <span class="hint">Hex, e.g. #FFFFFF.</span>
+                </div>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- Countdown -->
+        <section class="card">
+          <div class="card-head"><h3>Countdown timer</h3></div>
+          <div class="card-body">
+            <label class="check">
+              <input type="checkbox" id="cdToggle" checked onchange="document.getElementById('cdReveal').style.display = this.checked ? 'flex' : 'none'; document.getElementById('previewCountdown').style.display = this.checked ? 'inline-flex' : 'none';" />
+              Enable countdown
+            </label>
+
+            <div class="reveal" id="cdReveal">
+              <div class="field">
+                <label>Countdown deadline <span class="req">*</span></label>
+                <input class="control" type="datetime-local" value="2026-07-05T23:59" style="max-width:260px;" />
+                <span class="hint">Interpreted in your store timezone, then stored as UTC. Must be in the future at save time.</span>
+              </div>
+
+              <div class="form-row">
+                <div class="field color-field">
+                  <label>Countdown background <span class="req">*</span></label>
+                  <div class="color-input">
+                    <span class="swatch" id="cdBgSwatch" style="background:#000000;"></span>
+                    <input class="control hex" id="cdBgHex" type="text" value="#000000"
+                           oninput="document.getElementById('cdBgSwatch').style.background=this.value; document.getElementById('previewCountdown').style.background=this.value;" />
+                  </div>
+                </div>
+                <div class="field color-field">
+                  <label>Countdown text color <span class="req">*</span></label>
+                  <div class="color-input">
+                    <span class="swatch" id="cdTextSwatch" style="background:#FFFFFF;"></span>
+                    <input class="control hex" id="cdTextHex" type="text" value="#FFFFFF"
+                           oninput="document.getElementById('cdTextSwatch').style.background=this.value; document.getElementById('previewCountdown').style.color=this.value;" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="field">
+                <label>Countdown format</label>
+                <select class="control" id="cdFormat" style="max-width:260px;" onchange="window.__cdFormat = this.value;">
+                  <option value="dd:hh:mm:ss" selected>dd:hh:mm:ss</option>
+                  <option value="hh:mm:ss">hh:mm:ss</option>
+                  <option value="with_labels">with_labels</option>
+                </select>
+                <span class="hint">How the remaining time is displayed on the bar.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        </div><!-- /editor-main -->
+
+        <!-- RIGHT: live preview (sticky on desktop, moves on top on small screens) -->
+        <aside class="editor-side">
+          <section class="card preview-pane">
+            <div class="card-head"><h3>Live preview</h3><div class="spacer"></div><span class="badge neutral no-dot">Updates as you edit</span></div>
+            <div class="preview-stage">
+              <div class="ann-bar" id="previewBar" style="background:#1A1A1A; color:#FFFFFF;">
+                <span class="ann-msg" id="previewMsg">Summer sale — up to 50% off. Ends soon!</span>
+                <span class="ann-countdown" id="previewCountdown" style="background:#000000; color:#FFFFFF;">--:--:--:--</span>
+              </div>
+            </div>
+            <div class="preview-note">This is exactly how the active bar renders at the top of your storefront.</div>
+          </section>
+        </aside>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Vanilla JS: tick the preview countdown only (no framework, no build step) -->
+  <script>
+    (function () {
+      window.__cdFormat = 'dd:hh:mm:ss';
+      var deadline = new Date('2026-07-05T23:59:00').getTime();
+      var el = document.getElementById('previewCountdown');
+
+      function pad(n) { return String(n).padStart(2, '0'); }
+
+      function render(format, ms) {
+        var t = Math.max(0, Math.floor(ms / 1000));
+        var d = Math.floor(t / 86400);
+        var h = Math.floor((t % 86400) / 3600);
+        var m = Math.floor((t % 3600) / 60);
+        var s = t % 60;
+        if (format === 'hh:mm:ss') return pad(d * 24 + h) + ':' + pad(m) + ':' + pad(s);
+        if (format === 'with_labels') return d + 'd ' + pad(h) + 'h ' + pad(m) + 'm ' + pad(s) + 's';
+        return pad(d) + ':' + pad(h) + ':' + pad(m) + ':' + pad(s); // dd:hh:mm:ss
+      }
+
+      function tick() {
+        if (!el) return;
+        var remaining = deadline - Date.now();
+        if (remaining <= 0) { el.textContent = render(window.__cdFormat, 0); return; }
+        el.textContent = render(window.__cdFormat, remaining);
+      }
+      tick();
+      setInterval(tick, 1000);
+    })();
+  </script>
+</body>
+</html>

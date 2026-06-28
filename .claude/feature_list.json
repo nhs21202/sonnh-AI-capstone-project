@@ -1,0 +1,87 @@
+{
+  "project": "Announcement Bar App",
+  "description": "Shopify app: a merchant manages many saved announcement bars (message, styling, fixed-date countdown) in the embedded admin, with at most one active at a time; the single active bar renders site-wide on the storefront and self-hides at expiry. Source of truth for build scope. Rules: only ONE feature in-progress at a time; respect the DAG (never start a feature whose dependencies are not all 'done'); 'evidence' is filled only with real verify-command output. See docs/PRODUCT.md, docs/ARCHITECTURE.md, docs/plan.md.",
+  "statusLegend": ["not-started", "in-progress", "done", "blocked"],
+  "features": [
+    {
+      "id": "feat-001",
+      "name": "Repo scaffold & demo environment",
+      "description": "Create the three tier source skeletons (backend/ Go+Fiber+GORM+MySQL, frontend/ Vite+React+TS+Polaris+App Bridge, storefront/ Webpack+TS) that build and boot; wire them to the existing env descriptors so `bash init.sh` finishes green from a clean checkout. Stand up the self-contained demo env: own Shopify Partner dev store, installed app (App Bridge apiKey + app-embed extension), local MySQL, and a public tunnel so the storefront can reach the backend.",
+      "dependencies": [],
+      "acceptance": "All three tiers build/boot from a clean checkout; backend connects to MySQL; dev store + app exist; tunnel reaches the backend.",
+      "status": "done",
+      "risk": "medium",
+      "evidence": "init.sh exit 0 HARNESS GREEN (9 steps); tunnel reaches backend - GET /health via ngrok returns the {error,msg,data} JSON envelope. Detail: dev store sonnh-dev-store-3.myshopify.com; app created (client id 4a274004...); local 127.0.0.1:5005/health -> 200 and https://justness-keep-plaza.ngrok-free.dev/health -> 200 {data:{status:up},error:false,msg:ok}. Three tiers build (backend go test/build, frontend vite build, storefront webpack), built test-first (TDD), per-tier .env."
+    },
+    {
+      "id": "feat-002",
+      "name": "Session / data model + OAuth install",
+      "description": "Define GORM model AnnouncementBar (fields per spec section 2): id PK; shop INDEX (non-unique) so many bars share a shop; admin-facing title; no sort_order. Auto-migrate on boot (GORM AutoMigrate; no golang-migrate). Implement Shopify OAuth/session install flow (GET /auth, /auth/callback) so the app installs on the dev store and the admin can authenticate. STATELESS: the ONLY table is announcement_bars; admin auth is via the App Bridge session-token 'dest' claim; the app never calls the Shopify Admin API; the OAuth callback completes the install handshake and DISCARDS the access token - there is NO shop/session/token table.",
+      "dependencies": ["feat-001"],
+      "acceptance": "Table exists after migration; app installs on the dev store; multiple rows for the same shop coexist; WHERE shop = ? returns the shop's set of bars; a fresh shop yields an empty list. High risk - requires human sign-off before marking done.",
+      "status": "done",
+      "risk": "high",
+      "evidence": "Human-verified live OAuth install on sonnh-dev-store-3 (redirect_uri whitelisted; installed with empty scope, confirming stateless / no Admin API). announcement_bars migrated (shop MUL non-unique). init.sh exit 0 GREEN (9 steps). go test ./... all pass: model+AutoMigrate (multi-bar-per-shop coexist, WHERE shop=? returns set, fresh shop empty), shopify HMAC valid/tampered, session-token dest decode + wrong-secret reject, ShopIsValid open-redirect/SSRF guard, CSRF state nonce mismatch->400, auth bad-HMAC->401. Built test-first (TDD)."
+    },
+    {
+      "id": "feat-003",
+      "name": "Backend admin CRUD API (+ one-active invariant + anti-IDOR)",
+      "description": "Routes GET/POST /api/v1/announcement-bars/:shop and PUT/DELETE /api/v1/announcement-bars/:shop/:id behind VerifyShopifyApi(). Anti-IDOR: derive the authenticated shop by decoding the App Bridge session-token JWT 'dest' claim in ALL modes (dev included) and compare to :shop (403 on mismatch); any :id must belong to that shop, else 404; never trust the path/query param. GET lists the shop's bars (newest first); POST creates (new bars default enabled=false) -> 201; PUT updates; DELETE deletes. Per-bar validation: title required, hex colors, message required when enabled, future countdown_end_at when countdown enabled. ONE-ACTIVE INVARIANT: when a create/update sets enabled=true, set enabled=false on all OTHER bars of the same shop in the SAME transaction. Standard {error,msg,data} envelope.",
+      "dependencies": ["feat-002"],
+      "acceptance": "Go unit tests: create -> list -> update -> delete round-trips; enabling one disables the others (assert exactly one enabled per shop); mismatched :shop vs JWT dest -> 403; foreign :id -> 404; invalid body -> 400. High risk - requires human sign-off before marking done.",
+      "status": "done",
+      "risk": "high",
+      "evidence": "go test ./... GREEN (init.sh exit 0). CRUD create->list->update->delete round-trip; ONE-ACTIVE INVARIANT (enabling one disables the others; exactly one enabled per shop); anti-IDOR middleware (token dest != :shop -> 403, missing token -> 401, match -> 200); foreign :id -> 404; invalid body (missing title, bad hex) -> 400. {error,msg,data} envelope. Built test-first (TDD). HIGH RISK note: live admin CRUD in the embedded app confirmed at demo."
+    },
+    {
+      "id": "feat-004",
+      "name": "Public storefront endpoint (server expiry gate)",
+      "description": "GET /web/public/bar?shop=<domain>, CORS *, no auth, shop-scoped by the query param. Returns the SINGLE active bar: select the shop's enabled=true bar (the one-active invariant guarantees at most one) and apply the server-side expiry gate (!countdown_enabled OR countdown_end_at in the future); if there is no enabled bar or it is already expired, data: null. Return only public display fields (no title).",
+      "dependencies": ["feat-002"],
+      "acceptance": "Go unit tests: missing shop -> 400; no enabled bar -> null; expired -> null; one active -> full payload; shop A cannot read shop B. High risk - requires human sign-off before marking done.",
+      "status": "manual-verification",
+      "risk": "high",
+      "evidence": "go test ./... GREEN. GET /web/public/bar (CORS *, no auth): missing shop -> 400; no enabled bar -> data null; expired (countdown passed) -> null; one active -> full payload (title NOT leaked to storefront); shop A cannot read shop B's bar. Built test-first (TDD). HIGH RISK note: live storefront fetch confirmed at demo."
+    },
+    {
+      "id": "feat-005",
+      "name": "Admin UI config form",
+      "description": "Data layer: ApiClient (axios + auth-header interceptor) -> BaseRepository -> AnnouncementBarRepository (list/create/update/remove); announcementBarSlice (createAsyncThunk list/create/update/delete, holding the collection) in store.ts. Polaris index list (IndexTable/ResourceList: title, an Active badge on the enabled bar, countdown end, message preview) with an Add bar primary action and per-row edit + delete. Per-bar editor: title field, Enabled toggle (enabling implies the other bars deactivate -- reflect the server invariant via refetch), message TextField, color inputs (Polaris ColorPicker in a Popover + hex TextField, alpha-aware), Enable-countdown checkbox revealing datetime-local deadline (store timezone), countdown colors, format Select. Store-timezone -> UTC conversion on load/save (date-fns-tz). Inline validation (native React state, red TextField errors). App Bridge contextual save bar (SaveBar) with dirty-state + leave-confirmation.",
+      "dependencies": ["feat-003"],
+      "acceptance": "List shows the shop's saved bars with an Active badge on the enabled one; create/edit/delete persist and survive reload; activating one bar deactivates the others; validation blocks empty title, empty message (when enabled), bad hex, and past/empty deadline when countdown enabled.",
+      "status": "manual-verification",
+      "risk": "medium",
+      "evidence": "tsc 0; vitest pass (store-tz<->UTC round-trip); vite build 0 (1484 modules). Built: ApiClient (axios + App Bridge session-token interceptor) -> BaseRepository -> AnnouncementBarRepository (list/create/update/remove); announcementBarSlice (Redux Toolkit); Polaris bars list (Active badge, Add/Edit/Delete) + per-bar editor (title/enabled toggle/message/hex colors/countdown deadline+colors+format) with validation mirroring the backend (empty title, empty message when enabled, bad hex, past/empty deadline); store-tz->UTC via date-fns-tz. Live persist/reload confirmed in the embedded app at demo."
+    },
+    {
+      "id": "feat-006",
+      "name": "Storefront bundle + theme extension",
+      "description": "Storefront data layer (ApiClient -> BaseRepository -> AnnouncementBarRepository.getBar). Webpack entry index.ts: on DOMContentLoaded read window.Shopify.shop, fetch the single active bar, and if data !== null build + prepend the one bar to <body>, apply colors, run a 1s countdown ticker. Remaining-time math and each countdown_format are pure, unit-testable functions. Client expiry: at zero, clear interval and remove the bar (no refetch). Theme App Extension app-embed block (target: body) sets window.announcementBarEnabled + page context and injects the built announcement-bar.js via a storefront.liquid snippet. The storefront renders exactly one active bar.",
+      "dependencies": ["feat-004"],
+      "acceptance": "Unit tests: remaining-time math, expiry boundary, all three formats. On a dev-store storefront with app embed enabled: the active bar renders with correct colors/message; countdown ticks; reaching zero removes the bar; no active bar -> no bar; app-embed-off -> no bar.",
+      "status": "manual-verification",
+      "risk": "medium",
+      "evidence": "vitest 5 pass (remaining-time math; expiry boundary inclusive; all three formats dd:hh:mm:ss / hh:mm:ss / with_labels); tsc 0; webpack build 0 -> extensions/announcement-bar/assets/announcement-bar.js. Built: ApiClient->BaseRepository->AnnouncementBarRepository.getBar; index.ts reads window.Shopify.shop, fetches the single active bar, prepends one bar + 1s countdown ticker, removes it on live expiry. Theme App Extension app-embed block (target body) loads the bundle. Live render/ticking confirmed on the dev-store at demo."
+    },
+    {
+      "id": "feat-007",
+      "name": "End-to-end demo + verify suite",
+      "description": "Full E2E: create two bars in admin -> activate one -> open storefront -> see it + ticking countdown -> activate the other -> reload (storefront swaps to it) -> delete one -> set a near deadline -> watch it expire and vanish. Run the full verify suite (backend go test, storefront unit tests) and a documented manual storefront walkthrough; capture evidence. Prepare capstone deliverables (repo link, slide deck, AI/Harness workflow note).",
+      "dependencies": ["feat-005", "feat-006"],
+      "acceptance": "The end-to-end demo script passes with captured evidence; full backend + storefront test suites green.",
+      "status": "not-started",
+      "risk": "medium",
+      "evidence": ""
+    },
+    {
+      "id": "feat-008",
+      "name": "Live-ticking admin preview (OPTIONAL, cuttable)",
+      "description": "Live-ticking preview of the bar being edited: tick the countdown live in the editor by sharing the storefront ticker logic, re-rendering as fields change. CUTTABLE: this is the last feature and a leaf node (nothing depends on it); drop it if time runs short without affecting the demo or any other feature.",
+      "dependencies": ["feat-005"],
+      "acceptance": "In the editor, the preview countdown of the bar being edited ticks live and updates immediately on field changes. (Skippable: cutting it leaves the static preview from feat-005 intact.)",
+      "status": "not-started",
+      "risk": "low",
+      "evidence": ""
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Announcement bars · Announcement Bar App</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Embedded-admin top frame -->
+    <header class="app-topbar">
+      <div class="brand">
+        <span class="logo">A</span>
+        <span class="name">Announcement Bar App<small>Shopify admin</small></span>
+      </div>
+      <div class="spacer"></div>
+      <span class="shop-pill">demo-shop.myshopify.com</span>
+    </header>
+
+    <main class="page">
+      <!-- Page header: title + primary action -->
+      <div class="page-head">
+        <div>
+          <h1>Announcement bars</h1>
+          <p>Create and manage your bars. Only one bar can be active at a time — the active bar is what visitors see on your storefront.</p>
+        </div>
+        <div class="spacer"></div>
+        <a href="admin-editor.html" class="btn btn-primary"><span>+</span> Add bar</a>
+      </div>
+
+      <!-- Resource list -->
+      <section class="card">
+        <div class="card-head">
+          <h3>Saved bars</h3>
+          <span class="badge neutral no-dot">3 bars</span>
+          <div class="spacer"></div>
+          <span class="muted" style="font-size:12.5px;">1 active</span>
+        </div>
+        <div class="table-wrap">
+          <table class="data">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Countdown end</th>
+                <th>Message preview</th>
+                <th class="actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- THE single active bar -->
+              <tr>
+                <td class="bar-title">Summer Flash Sale</td>
+                <td><span class="badge active">Active</span></td>
+                <td class="mono">Jul 5, 2026, 11:59 PM</td>
+                <td class="msg-preview">Summer sale — up to 50% off. Ends soon!</td>
+                <td class="actions">
+                  <a href="admin-editor.html" class="btn btn-ghost btn-sm">Edit</a>
+                  <button class="btn btn-critical btn-sm">Delete</button>
+                </td>
+              </tr>
+              <!-- Drafts (not active) -->
+              <tr>
+                <td class="bar-title">Free Shipping Banner</td>
+                <td><span class="badge draft">Draft</span></td>
+                <td class="mono muted">—</td>
+                <td class="msg-preview">Free shipping on all orders over $50.</td>
+                <td class="actions">
+                  <a href="admin-editor.html" class="btn btn-ghost btn-sm">Edit</a>
+                  <button class="btn btn-critical btn-sm">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td class="bar-title">Back-to-School Countdown</td>
+                <td><span class="badge draft">Draft</span></td>
+                <td class="mono">Sep 1, 2026, 9:00 AM</td>
+                <td class="msg-preview">Back-to-school deals land in:</td>
+                <td class="actions">
+                  <a href="admin-editor.html" class="btn btn-ghost btn-sm">Edit</a>
+                  <button class="btn btn-critical btn-sm">Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-foot" style="justify-content:flex-start;">
+          <span class="muted" style="font-size:12.5px;">Enabling any bar in the editor automatically turns the others into drafts, so exactly one stays active.</span>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

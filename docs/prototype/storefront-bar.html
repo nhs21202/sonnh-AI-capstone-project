@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Storefront preview · Announcement Bar App</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!--
+    STOREFRONT TARGET
+    The storefront bundle injects ONLY the single ACTIVE bar and prepends it to <body>.
+    Colors, message, countdown_enabled, deadline and format all come from the active bar.
+
+    NO ACTIVE BAR -> NOTHING RENDERS.
+    If GET /web/public/bar?shop= returns { data: null } (no enabled bar, or the active
+    bar is already expired), the bundle injects nothing and the page below renders with
+    no bar at the top. In that case the <div class="ann-bar"> block simply does not exist
+    in the DOM — it would look exactly like the markup below with the bar element removed:
+
+        <body>
+          (no .ann-bar here)
+          <div class="sf"> ...theme... </div>
+        </body>
+  -->
+
+  <!-- The single ACTIVE bar, prepended at the very top of <body> -->
+  <div class="ann-bar" id="storefrontBar" style="background:#1A1A1A; color:#FFFFFF;">
+    <span class="ann-msg">Summer sale — up to 50% off. Ends soon!</span>
+    <span class="ann-countdown" id="sfCountdown" style="background:#000000; color:#FFFFFF;">--:--:--:--</span>
+  </div>
+
+  <!-- Fake storefront theme behind the bar (hero + products) -->
+  <div class="sf">
+    <header class="sf-header">
+      <span class="sf-logo">NORTHWIND</span>
+      <nav>
+        <a href="#">Shop</a>
+        <a href="#">Collections</a>
+        <a href="#">About</a>
+      </nav>
+      <span class="spacer"></span>
+      <span class="sf-cart">Cart (0)</span>
+    </header>
+
+    <section class="sf-hero">
+      <h1>Everyday essentials, beautifully made.</h1>
+      <p>Thoughtfully designed pieces for your home and wardrobe. Free returns within 30 days.</p>
+      <a href="#" class="sf-btn">Shop the sale</a>
+    </section>
+
+    <section class="sf-grid">
+      <div class="sf-card"><div class="ph"></div><div class="sf-info"><b>Linen Throw</b><span>$48.00</span></div></div>
+      <div class="sf-card"><div class="ph"></div><div class="sf-info"><b>Ceramic Mug</b><span>$22.00</span></div></div>
+      <div class="sf-card"><div class="ph"></div><div class="sf-info"><b>Wool Scarf</b><span>$64.00</span></div></div>
+      <div class="sf-card"><div class="ph"></div><div class="sf-info"><b>Canvas Tote</b><span>$36.00</span></div></div>
+      <div class="sf-card"><div class="ph"></div><div class="sf-info"><b>Glass Carafe</b><span>$54.00</span></div></div>
+      <div class="sf-card"><div class="ph"></div><div class="sf-info"><b>Cotton Apron</b><span>$29.00</span></div></div>
+      <div class="sf-card"><div class="ph"></div><div class="sf-info"><b>Oak Tray</b><span>$72.00</span></div></div>
+      <div class="sf-card"><div class="ph"></div><div class="sf-info"><b>Brass Hook Set</b><span>$18.00</span></div></div>
+    </section>
+  </div>
+
+  <!-- Vanilla JS: tick the active bar's countdown (format dd:hh:mm:ss). No framework. -->
+  <script>
+    (function () {
+      var format = 'dd:hh:mm:ss';
+      var deadline = new Date('2026-07-05T23:59:00').getTime();
+      var el = document.getElementById('sfCountdown');
+      var bar = document.getElementById('storefrontBar');
+
+      function pad(n) { return String(n).padStart(2, '0'); }
+
+      function render(ms) {
+        var t = Math.max(0, Math.floor(ms / 1000));
+        var d = Math.floor(t / 86400);
+        var h = Math.floor((t % 86400) / 3600);
+        var m = Math.floor((t % 3600) / 60);
+        var s = t % 60;
+        if (format === 'hh:mm:ss') return pad(d * 24 + h) + ':' + pad(m) + ':' + pad(s);
+        if (format === 'with_labels') return d + 'd ' + pad(h) + 'h ' + pad(m) + 'm ' + pad(s) + 's';
+        return pad(d) + ':' + pad(h) + ':' + pad(m) + ':' + pad(s);
+      }
+
+      var timer = setInterval(function () {
+        var remaining = deadline - Date.now();
+        if (remaining <= 0) {
+          // Live expiry while viewing: stop ticking and remove the bar from the DOM.
+          clearInterval(timer);
+          if (bar) bar.remove();
+          return;
+        }
+        el.textContent = render(remaining);
+      }, 1000);
+
+      // Initial paint
+      el.textContent = render(deadline - Date.now());
+    })();
+  </script>
+</body>
+</html>

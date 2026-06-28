@@ -1,0 +1,13 @@
+{
+  "name": "announcement-bar-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Announcement Bar App — root orchestration. Each tier (frontend/, storefront/) is a standalone npm project; the backend is a Go module. Scripts delegate to the Makefile.",
+  "scripts": {
+    "check": "make check",
+    "test": "make test",
+    "build": "make build",
+    "db:up": "make db.up",
+    "db:down": "make db.down"
+  }
+}

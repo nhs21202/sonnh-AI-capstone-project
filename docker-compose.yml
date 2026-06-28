@@ -1,0 +1,43 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: announcement_bar
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app_pass
+      MYSQL_ROOT_PASSWORD: app_root_pass
+    ports:
+      # Localhost-only bind; host port 3307 avoids clashing with other local MySQLs.
+      - "127.0.0.1:${DB_PORT:-3307}:3306"
+    volumes:
+      - announcement_bar_db:/var/lib/mysql
+    healthcheck:
+      # Ping as the app user (not root) so "healthy" means the app can actually connect.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uapp", "-papp_pass", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # phpMyAdmin web UI for inspecting the database. Optional dev tool — NOT started by
+  # init.sh / `make db.up` (those start only `db`). Bring it up with `make db.admin`
+  # (or `docker compose up -d phpmyadmin`) and open http://localhost:8081.
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PMA_HOST: db          # connect to the db service over the compose network
+      PMA_PORT: 3306
+      # Auto-login (no login screen) for local dev — safe because the port is bound to
+      # 127.0.0.1 only. Logs straight in as root for full access to all databases.
+      PMA_USER: root
+      PMA_PASSWORD: app_root_pass
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "127.0.0.1:8081:80"
+
+volumes:
+  announcement_bar_db:

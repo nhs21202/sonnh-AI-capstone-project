@@ -1,0 +1,29 @@
+# Announcement Bar App — .gitignore
+
+# macOS
+**/.DS_store
+
+# Go build artifacts
+**/build/
+backend/tmp/
+tmp/
+
+# Node.js dependencies
+**/node_modules/
+
+# Editors / IDEs / Shopify CLI
+**/.idea
+**/.vscode
+**/.shopify
+
+# Environment files — commit ONLY the example, never a real .env
+.env
+.env.*
+!.env.example
+
+# Logs, secrets, coverage, bundler output
+*.log
+*.pem
+*.key
+coverage/
+dist/

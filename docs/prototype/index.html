@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prototype · Announcement Bar App</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="landing">
+    <div class="brand" style="margin-bottom:18px;">
+      <span class="logo">A</span>
+      <span class="name">Announcement Bar App<small>UI prototype</small></span>
+    </div>
+
+    <h1>Prototype — UI source of truth</h1>
+    <p class="lead">
+      Static HTML/CSS mockups describing the <b>target interface</b> for the Announcement Bar App.
+      The real admin (<code>frontend/</code>) and storefront bar must look equivalent to these
+      screens. All screens share one stylesheet, <code>styles.css</code>, so colors, spacing and
+      radius stay consistent. Model: many saved bars per shop, at most one active at a time; the
+      storefront shows the single active bar.
+    </p>
+
+    <div class="screen-grid">
+      <a class="screen-link" href="admin-list.html">
+        <span class="sl-ico">&#9776;</span>
+        <span class="sl-body">
+          <b>Admin — bars list</b>
+          <p>The landing list of saved bars with an Active badge on the one enabled bar, plus Edit/Delete per row. <code>admin-list.html</code></p>
+        </span>
+        <span class="arrow">&rarr;</span>
+      </a>
+
+      <a class="screen-link" href="admin-editor.html">
+        <span class="sl-ico">&#9998;</span>
+        <span class="sl-body">
+          <b>Admin — bar editor</b>
+          <p>Per-bar form: title, enabled toggle, message, colors, countdown, contextual save bar and a live preview. <code>admin-editor.html</code></p>
+        </span>
+        <span class="arrow">&rarr;</span>
+      </a>
+
+      <a class="screen-link" href="storefront-bar.html">
+        <span class="sl-ico">&#9608;</span>
+        <span class="sl-body">
+          <b>Storefront — active bar</b>
+          <p>A mock storefront with the single active bar prepended at the top, ticking its countdown. <code>storefront-bar.html</code></p>
+        </span>
+        <span class="arrow">&rarr;</span>
+      </a>
+    </div>
+
+    <p class="muted" style="margin-top:26px; font-size:13px;">
+      Open by double-clicking any file, or <code>open docs/prototype/index.html</code>. Shared tokens and components live in <code>styles.css</code>.
+    </p>
+  </div>
+</body>
+</html>

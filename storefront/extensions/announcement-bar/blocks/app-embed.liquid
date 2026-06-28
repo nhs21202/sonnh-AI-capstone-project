@@ -1,0 +1,15 @@
+{% comment %}
+  Announcement Bar App - app embed block.
+  Merchant enables it in the Theme editor under "App embeds". On the storefront it sets a flag
+  and loads the built bundle, which fetches the shop's single active bar and renders it.
+{% endcomment %}
+<script>window.announcementBarEnabled = true;</script>
+<script src="{{ 'announcement-bar.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Announcement Bar",
+  "target": "body",
+  "settings": []
+}
+{% endschema %}
