@@ -1,281 +1,189 @@
 # progress.md — Session Log
 
-Human-readable record of progress. Updated at the end of every session.
+Human-readable, **chronological** record of progress. The machine-readable source of truth for
+feature state + evidence is `.claude/feature_list.json`; this file is the narrative bridge between
+sessions (alongside `session-handoff.md`). Keep entries short and factual.
 
-## Current status
+## Current status (2026-06-29)
 
-**Done:** feat-001, feat-002, feat-003 (feat-002/003 had live demo sign-off on `sonnh-dev-store-3`).
-**`manual-verification` — feat-004, feat-005, feat-006:** code + automated tests are complete and
-green, but they await the user's hands-on end-to-end verification before being marked done. **feat-007
-+ feat-008 not-started.** feat-008's live-ticking editor preview exists in code but stays not-started
-pending the user's own verification. Do NOT mark anything done from code reading — only the user's
-hands-on sign-off promotes a `manual-verification` feature to done. All three tiers build/boot;
-`bash init.sh` is GREEN (steps 1–9).
+**All 8 features DONE.** `bash init.sh` → **HARNESS GREEN (9/9)**: backend `go test`, frontend 67
+vitest, storefront 5 vitest, all builds 0. Feature state (mirrors `.claude/feature_list.json`):
+
+| Feature | What | Status |
+|---|---|---|
+| feat-001 | Repo scaffold + demo environment | **done** |
+| feat-002 | Data model + OAuth install (stateless) | **done** (live install signed off) |
+| feat-003 | Admin CRUD API + one-active + anti-IDOR | **done** (live admin CRUD signed off) |
+| feat-004 | Public storefront endpoint (expiry gate) | **done** (public endpoint verified live via curl) |
+| feat-005 | Admin UI config form | **done** |
+| feat-006 | Storefront bundle + theme extension | **done** |
+| feat-007 | E2E demo + verify suite + deliverables | **done** (repo URL placeholder still to fill) |
+| feat-008 | Live-ticking admin preview | **done** |
+
+feat-004–008 were promoted from `manual-verification` to `done` on the **user's hands-on sign-off
+(2026-06-29)** for capstone submission. **Remaining non-code item:** fill the repo URL placeholder
+(presentation slide 16 + `docs/demo-script.md` §3).
 
 ## Blockers
 
-- None blocking. Awaiting the user's hands-on verification of feat-004–007 before final sign-off.
+- None. Awaiting the user's hands-on verification of feat-004–008.
 
-## Open decisions
+## Resolved decisions
 
-All six DISCUSS questions are resolved (see the top of `docs/questions.md`): course schema for the
-feature DAG; anti-IDOR via JWT `dest` in all modes; flat columns per bar (many saved bars per shop,
-at most one active at a time, enforced by a transactional one-active invariant); live-ticking
-preview last and cuttable (implemented, awaiting user sign-off); color inputs use a Polaris
-`ColorPicker` popover **and** a hex `TextField`; fresh self-contained demo env.
+- **Schema / DAG:** course schema; feature DAG lives in `.claude/feature_list.json`.
+- **Stateless auth:** the only table is `announcement_bars`; admin auth via the App Bridge
+  session-token `dest` claim; the OAuth callback discards the access token; the app never calls the
+  Shopify Admin API; no shop/session/token table.
+- **One active per shop:** many saved bars, at most one enabled — enforced in a DB transaction.
+- **Anti-IDOR:** session-token `dest` compared to `:shop` in ALL modes (403 on mismatch).
+- **Schema management:** GORM `AutoMigrate` on boot (golang-migrate dropped — single-table app).
+- **Per-tier `.env`:** `backend/.env` (secrets + DB), `frontend/.env` + `storefront/.env` (public,
+  compiled into the bundles). No root `.env`.
+- **Validation (both tiers, mirrored in `validate.Bar` + `frontend/src/lib/barValidation.ts`):**
+  title required ≤120; **message required (always) ≤200**; hex colors; future countdown deadline when
+  countdown is on.
+- **Admin UI:** Polaris + App Bridge; ColorPicker popover + hex field; on/off **toggles** (not
+  checkboxes); inline `TextField` errors with `*` required markers; **Edit** uses the contextual save
+  bar, **Add** uses a "Create bar" page primary action.
 
-## Session log
+## Session log (chronological)
 
 ### Session 1 — Planning (2026-06-28)
-- **Done:** brainstormed scope (many saved bars per shop, one active at a time); wrote
-  `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`, `docs/plan.md`, `docs/user-stories.md`,
-  `docs/complex-cases.md`, `docs/questions.md`; authored the feature DAG at
-  `.claude/feature_list.json`; established the harness scaffold (`AGENTS.md`, `CLAUDE.md`,
-  `progress.md`, `session-handoff.md`, env descriptors).
-- **In-progress:** none.
-- **Next:** feat-001 (repo scaffold & demo environment).
-- **Blockers:** none.
-- **Evidence:** planning artifacts present under `docs/` and `.claude/` (see file tree).
+Brainstormed scope (many saved bars per shop, one active at a time). Wrote `docs/PRODUCT.md`,
+`ARCHITECTURE.md`, `plan.md`, `user-stories.md`, `complex-cases.md`, `questions.md`; authored the
+feature DAG (`.claude/feature_list.json`); stood up the harness scaffold (`AGENTS.md`, `CLAUDE.md`,
+`progress.md`, `session-handoff.md`, env descriptors).
 
-### Session 2 — Guardrail / feedback subsystem (Day-4) (2026-06-28)
-- **Done:** stood up the guardrail subsystem (a harness component, not a product feature in the
-  DAG). Created `.claude/settings.json` (permission allow/ask/deny + hook registration),
-  `.claude/hooks/block-dangerous.sh` (PreToolUse, exit 2 = block), `.claude/hooks/scan-secrets.sh`
-  (PostToolUse, warn-only). Handled the three known kit bugs (exit 2 not 1; parse
-  `.tool_input.command`; specific `rm -rf` regex) and denied editing the hooks themselves.
-- **Windows adaptation:** hooks are registered as `bash .claude/hooks/*.sh` (not bare `.sh`).
-  Parser selection is **probe-validated** because `jq` is absent and the on-PATH `python3` is a
-  fake Windows App-Execution-Alias stub; the probe falls through to the real `python` and keeps
-  the fail-closed contract intact. All comments/messages translated to English (project rule).
-- **In-progress:** none.
-- **Next:** feat-001 (repo scaffold & demo environment).
-- **Blockers:** none.
-- **Evidence (raw exit codes):**
-  - `rm -rf /` -> 2; `git push --force` -> 2; `git reset --hard` -> 2; `DROP TABLE` -> 2;
-    `curl … | sh` -> 2 (BLOCKED).
-  - `npm run remove-cache` -> 0; `go test ./...` -> 0; `npm install` -> 0; empty/non-bash -> 0 (allowed).
-  - scan-secrets: clean file -> exit 0, no warning; `shpat_…` and `mysql://user:pass@…`
-    -> exit 0 with WARNING. (No-parser path is fail-closed=block for the Pre hook, warn-skip for the Post hook.)
+### Session 2 — Guardrail / feedback subsystem (2026-06-28)
+Stood up the guardrails (a harness component, not a DAG feature): `.claude/settings.json`
+(permission allow/ask/deny + hook registration), `block-dangerous.sh` (PreToolUse, exit 2 = block),
+`scan-secrets.sh` (PostToolUse, warn-only). Windows-adapted: hooks run as `bash .claude/hooks/*.sh`;
+a **probe-validated** JSON parser keeps the fail-closed contract (no `jq`; the on-PATH `python3` is a
+fake App-Execution-Alias stub).
+**Evidence:** `rm -rf /`, `git push --force`, `git reset --hard`, `DROP TABLE`, `curl … | sh` → exit 2
+(blocked); safe commands → 0; secret patterns (`shpat_…`, `mysql://user:pass@…`) → warning.
 
 ### Session 3 — Environment subsystem (2026-06-28)
-- **Done:** built the Environment subsystem (shape based on a standard Go+React+Webpack monorepo
-  layout): `.gitignore`, `docker-compose.yml` (MySQL 8 only; `db` service, app user, healthcheck via
-  `mysqladmin ping` as `app`, `127.0.0.1:${DB_PORT:-3307}:3306`, named volume), `.env.example`
-  (lean: stage/server/Shopify/DB/Vite), `.nvmrc` (`22`), root `Makefile` (`db.up`/`db.down` +
-  tier-guarded `check`/`test`/`build`), root `package.json`, and `init.sh` (Node 22 → Go → `.env` →
-  MySQL up → wait healthy → backend test+build → frontend ci → storefront ci → GREEN banner).
-  (A golang-migrate `migrate.up` step existed here originally; later removed — see the migration
-  cleanup note below.)
-- **init.sh design:** steps 1–6 pass on a Node-22 + Docker-up checkout; **step 7 (backend) is the
-  intended controlled-RED** until feat-001 creates `backend/`.
-- **In-progress:** none.
-- **Next:** `docs/prototype/` (optional), then feat-001 (tier skeletons).
-- **Blockers:** none.
-- **Evidence (raw):**
-  - DB vars identical across `docker-compose.yml` / `.env.example` / `Makefile` / `init.sh`:
-    `announcement_bar` / `app` / `app_pass` / `3307` / `127.0.0.1`.
-  - `git check-ignore .env .env.example` → only `.env` ignored; `git status` shows `.env.example`
-    tracked-able and no `.env` (gitignore works).
-  - `bash init.sh` (Node 22 + Docker up): early steps GREEN — Node v22.14.0, Go 1.25.4, `.env` ready,
-    MySQL `mysql:8.0` pulled + container started, MySQL healthy via the app-user healthcheck — then
-    the intended controlled-RED at the backend step:
-    `Error: backend/ does not exist yet - build the Go tier in feat-001.` (exit 1).
-  - Fixed a `set -e` gotcha found during the run: a `cd backend && ...` chain is exempt from
-    `set -e` (non-final command in an `&&` list), so step 7 was bleeding into step 8; steps 7-9 now
-    guard the tier dir and `exit 1` with a clear message, halting cleanly at the failing step.
-  - MySQL container `sonnh-ai-capstone-project-db-1` is left running by init.sh (stop with
-    `make db.down`).
+Built `.gitignore`, `docker-compose.yml` (MySQL 8 only; app user; healthcheck; `127.0.0.1:3307`;
+named volume), `.nvmrc` (`22`), root `Makefile`, and `init.sh` (Node 22 → Go → `.env` → MySQL up →
+wait healthy → backend test+build → frontend ci → storefront ci → GREEN banner).
+**Evidence:** early steps GREEN on a Node-22 + Docker checkout; the backend step is an intended
+controlled-RED until feat-001 creates `backend/`. DB vars identical across compose / `.env.example` /
+`Makefile` / `init.sh`.
 
 ### Session 4 — Prototype UI spec (2026-06-28)
-- **Done:** created `docs/prototype/` (`index.html`, `styles.css`, `admin-list.html`,
-  `admin-editor.html`, `storefront-bar.html`) as the static UI source-of-truth — shared
-  Polaris-ish design tokens in `styles.css`; admin bars list with exactly one Active badge +
-  Edit/Delete; per-bar editor with title/enabled-toggle/message/colors (hex + swatch)/countdown
-  (deadline, colors, three formats) + pinned contextual save bar (dirty state) + live preview with a
-  vanilla-JS ticking countdown; storefront mock with the single active bar prepended + ticking
-  countdown and a "no active bar -> nothing renders" comment. Static HTML/CSS only (no framework, no
-  build step); brand "Announcement Bar App"; English only.
-- **In-progress:** none.
-- **Next:** feat-001 (build the three tier skeletons).
-- **Blockers:** none.
-- **Evidence:** files created under `docs/prototype/`: `index.html`, `styles.css`,
-  `admin-list.html`, `admin-editor.html`, `storefront-bar.html` (`ls -1 docs/prototype/` lists 5).
+Created `docs/prototype/` (`index.html`, `styles.css`, `admin-list.html`, `admin-editor.html`,
+`storefront-bar.html`) as the static UI source-of-truth: shared design tokens; admin list with one
+Active badge + Edit/Delete; per-bar editor with toggle + colors + countdown + live preview; storefront
+mock with the single active bar + ticking countdown. Static HTML/CSS only; English; brand
+"Announcement Bar App".
 
-### Session 5 — feat-001 Repo scaffold (in-progress) (2026-06-28)
-Built via the AI Quality Loop (§11), TDD for backend logic. **feat-001 set `in-progress`.**
+### Session 5 — feat-001 scaffold + harness decisions (2026-06-28)
+- **feat-001 DONE.** Three tier skeletons build/boot: `backend/` (Go module `announcementbar`,
+  `internal/{config,database,handlers}`, `main.go`, TDD + DB integration test), `frontend/`
+  (Vite + React 18 + Polaris shell), `storefront/` (Webpack + TS). `bash init.sh` → exit 0,
+  HARNESS GREEN (9 steps); GET `/health` via tunnel returns the `{error,msg,data}` envelope.
+- **Decisions baked into the harness:** stateless / single-table; per-tier `.env` + godotenv;
+  **golang-migrate dropped** (GORM `AutoMigrate` on boot — init.sh migrate step removed);
+  backend layout pinned in AGENTS §2.
+- **Env split:** single root `.env` → per-tier `backend/.env` / `frontend/.env` / `storefront/.env`
+  (frontend env is compiled into the public bundle, so secrets stay backend-only).
+- **Dev tooling:** optional phpMyAdmin service (`make db.admin`, auto-login, `127.0.0.1:8081`); the
+  harness flow (`init.sh` / `make db.up`) still starts only `db`.
+- **Windows residual risks:** `go test` can hit a Defender `test.exe` lock (init.sh tolerates only
+  that named artifact); npm `UNABLE_TO_VERIFY_LEAF_SIGNATURE` worked around per-run with
+  `npm_config_strict_ssl=false` (NOT baked into the repo).
+
+### Session 6 — feat-002 data model + OAuth install (2026-06-28)
+- **feat-002 DONE — live install signed off on `sonnh-dev-store-3`.** GORM model + `AutoMigrate`;
+  `shopify/` (`AuthorizeURL`, `VerifyHMAC`, `ShopFromSessionToken` `dest` decode,
+  `ExchangeCodeForToken` → token **discarded**); `/auth` + `/auth/callback`
+  (verify → exchange → discard → redirect). Stateless: only `announcement_bars`.
+- **Security (TDD):** `ShopIsValid` regex (open-redirect/SSRF guard) on both auth routes; CSRF state
+  nonce (`crypto/rand`, HttpOnly cookie, constant-time compare).
+- **Live-wiring fix:** OAuth `redirect_uri` double-slash from a trailing `/` in `APP_URL`.
+- **Evidence:** `init.sh` GREEN; `go test ./...` all pass (config, DB integration, auth bad-HMAC → 401,
+  shopify HMAC/`dest`); `DESCRIBE announcement_bars` matches the spec.
+
+### Session 7 — feat-003..006 + integration fixes (2026-06-28)
+- Built test-first: **feat-003** (admin CRUD + one-active invariant + anti-IDOR), **feat-004** (public
+  endpoint: single active bar / null, server expiry gate, no `title` leak, CORS), **feat-005** (admin
+  UI: ApiClient → repository → Redux, Polaris list + editor, `date-fns-tz`), **feat-006** (storefront
+  countdown math + fetch/render/ticker + Theme App Extension app-embed block).
+- **Integration fixes (caught live, not by unit tests):**
+  - Backend serves the built admin SPA — `app.Static("/")` + `GET /*` fallback (was "Cannot GET /").
+  - App Bridge loaded in `index.html` (`<meta shopify-api-key>` + `app-bridge.js`) — was admin API 401.
+  - CORS as path middleware on `/web/public` so the `OPTIONS` preflight is answered — was 405.
+- **Evidence:** `bash init.sh` → HARNESS GREEN (9 steps); backend all packages `ok`; both JS tiers
+  build + unit tests pass. feat-003/004 are high-risk → confirm live at the demo.
+
+### Session 8 — Polish + capstone deliverables (2026-06-29)
+- **Storefront bar made sticky** at the top of the page (`position: sticky; top:0`).
+- **Validation hardened (TDD):** title ≤120 / message ≤200 length rules on both tiers; **message is
+  now always required** (was only when enabled); extracted a testable `frontend/src/lib/barValidation.ts`;
+  added `*` required markers + character counters; removed the unused `formik`/`yup` deps.
+- **Toggles:** new on/off switch replaces the "Enabled" and "Enable countdown" checkboxes in the
+  editor; the list gained a per-row activate/deactivate toggle (server enforces one-active on refetch);
+  the prototype was updated to match.
+- **Add vs Edit save UX:** Edit keeps the contextual save bar; Add uses a "Create bar" page primary
+  action (no save bar). New bars default `message = "Your message here!"`.
+- **feat-007 artifacts:** `docs/demo-script.md` (10-step E2E walkthrough + verify evidence); a
+  terminal-themed Vietnamese slide deck at `presentation/index.html` (built via subagent).
+- **Evidence:** `bash init.sh` → HARNESS GREEN (9/9); backend `validate` + handlers `ok`; frontend
+  10 vitest pass, tsc 0, vite build 0; storefront 5 vitest pass, webpack 0.
+- feat-004–008 left at `manual-verification` pending the user's hands-on demo sign-off.
+
+### Session 9 — feat-005 frontend test suite (2026-06-29)
+Built out feat-005's frontend test suite to the Medium-risk bar (AGENTS §11 = unit + integration):
+jsdom + React Testing Library infra plus negative/boundary/integration coverage, and wired the
+frontend/storefront test runs into `init.sh` alongside the backend `go test`. **No feature marked
+done; frontend-only; no git.**
 
 **Completion Summary**
 - **Changed:**
-  - `backend/` — Go module `announcementbar`; `internal/config` (env→DSN + defaults, TDD),
-    `internal/handlers/health` (`{error,msg,data}` envelope, TDD), `internal/database` (GORM MySQL
-    connect, TDD integration test against the live container), `main.go` (boot: config→DB→Fiber→/health).
-  - `storefront/` — standalone Webpack + TS (package.json, tsconfig, webpack.config.js, src/index.ts);
-    builds to `dist/announcement-bar.js`.
-  - `frontend/` — standalone Vite + React 18 + TS + Polaris 13 admin shell (App Bridge dep present,
-    Provider deferred to feat-002); builds via `tsc --noEmit && vite build`.
-  - `init.sh` step 7 hardened (see Residual risks). Root `package.json` dropped `workspaces`
-    (tiers are standalone so per-tier `npm ci` works).
-- **Out-of-scope changes:** none beyond the workspaces removal + the init.sh step-7 fix (both needed
-  to make `init.sh` reliably green on this machine).
-- **Verification result (raw):** `bash init.sh` → **exit 0, "================ HARNESS GREEN ================"**
-  (steps 1–9). Backend `go vet/build/test ./...` = 0 (config/handlers/database all `ok`; DB integration
-  test pinged MySQL). Frontend `vite build` = 0 (1096 modules; 445 kB Polaris CSS + 350 kB JS).
-  Storefront `webpack` = 0 (`dist/announcement-bar.js`). `node_modules`/`dist`/`.env` confirmed git-ignored.
-- **Residual risks:**
-  1. **Windows `go test` flake:** fresh test-binary builds can hit a Defender temp-file lock
-     (`unlinkat …test.exe`) and exit non-zero despite passing. `init.sh` step 7 now aborts on any real
-     `FAIL` but tolerates only that named cleanup artifact.
-  2. **TLS interception on this network:** npm install/ci fails with `UNABLE_TO_VERIFY_LEAF_SIGNATURE`
-     (an SSL-inspecting proxy/AV CA not in npm's trust store). Worked around **per-run** with
-     `npm_config_strict_ssl=false` (NOT baked into the repo). Proper fix: trust the CA via
-     `NODE_EXTRA_CA_CERTS`, or `npm config set strict-ssl false` once on this machine.
-  3. **npm audit:** frontend reports 2 advisories (1 high, 1 moderate) in transitive build deps —
-     noted, not addressed in the skeleton.
-- **Not verified / NOT done (human-only — feature stays in-progress):** Shopify Partner dev store;
-  installed app + real `SHOPIFY_API_KEY`/`SHOPIFY_API_SECRET` via OAuth; a public tunnel reaching the
-  backend. These need your Shopify account and can't be done by the agent.
-
-**Human checklist to finish feat-001 (then flip it to `done`):**
-1. Create a Shopify Partner dev store. 2. Create an app; copy its API key/secret into `.env`
-(`SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `SCOPES`). 3. Start a tunnel (e.g. `cloudflared`/`ngrok`) to
-`http://127.0.0.1:5005`; set `APP_URL` to the tunnel URL. 4. Install the app on the dev store. 5. Re-run
-`bash init.sh`, confirm green, then set feat-001 `done`.
-
-### Dev tooling — phpMyAdmin (2026-06-28)
-- Added a `phpmyadmin:5.2` service to `docker-compose.yml` (on-demand; `127.0.0.1:8081`), plus
-  `make db.admin` (start + print URL) and `make db.shell` (MySQL CLI). `init.sh` / `make db.up`
-  still start only `db`, so the harness flow is unaffected. Configured for **auto-login** (config
-  auth as root; no login screen) since the port is bound to 127.0.0.1 only. Verified: HTTP 200, no
-  login form, sees the `announcement_bar` database at http://localhost:8081.
-
-### Env refactor — per-tier .env files (2026-06-28)
-- Split the single root `.env` into per-tier files (standard 3-tier layout): `backend/.env`
-  (secrets + DB; auto-loaded via `github.com/joho/godotenv/autoload`), `frontend/.env`
-  (Vite `VITE_REACT_APP_*`, public only), `storefront/.env` (webpack `REACT_APP_*`, injected at build
-  via `dotenv` + `DefinePlugin`). Removed root `.env`/`.env.example`. `init.sh` step 3 creates all
-  three from each `*/.env.example`; root `Makefile` reads `backend/.env` for the DSN. **Why:** each
-  bundler loads env from its own dir, and frontend env is compiled into the public bundle, so secrets
-  must stay backend-only.
-- **Verified:** `bash init.sh` GREEN (steps 1–9); backend `go build/test` ok; frontend `vite build`
-  ok; storefront bundle has `REACT_APP_API_BASE_URL` baked in (grep found `127.0.0.1:5005`).
-  `*/.env.example` committable, `*/.env` git-ignored.
-
-### Fix — storefront CORS preflight 405 (feat-004/006 live wiring) (2026-06-28)
-- **Gap:** the storefront fetch to `/web/public/bar` failed — the browser sent an `OPTIONS` preflight
-  (triggered by the custom `ngrok-skip-browser-warning` header) and the backend returned **405**
-  because CORS was attached only to the GET route, leaving `OPTIONS` unhandled. The unit tests
-  didn't catch it (they don't do cross-origin preflight).
-- **Fix:** `main.go` now applies CORS as path middleware `app.Use("/web/public", cors.New({AllowOrigins:"*",
-  AllowMethods:"GET,OPTIONS", AllowHeaders:"ngrok-skip-browser-warning, Content-Type"}))`, which answers
-  the preflight. Verified: `OPTIONS` -> 204 with `Allow-Origin: *` + `Allow-Headers`; `GET` -> 200 `*`.
-
-### Fix — App Bridge not loaded -> admin API 401 (completes feat-005 auth wiring) (2026-06-28)
-- **Gap:** the admin SPA rendered but `GET /api/v1/announcement-bars/:shop` returned **401** with **no
-  `Authorization` header**. Root cause: the ApiClient reads the session token from
-  `window.shopify.idToken()`, but `index.html` never loaded **App Bridge**, so `window.shopify` was
-  undefined -> no token attached.
-- **Fix:** `frontend/index.html` `<head>` now has `<meta name="shopify-api-key"
-  content="%VITE_SHOPIFY_API_KEY%">` + `<script src="https://cdn.shopify.com/shopifycloud/app-bridge.js">`
-  (loads before the bundle). Verified: a build injects the key into the meta and includes the script.
-- **Requires (human config):** `frontend/.env` `VITE_SHOPIFY_API_KEY=<api key>`; `backend/.env`
-  `SHOPIFY_API_SECRET=<secret>` EXACT (no spaces around `=`, or the JWT verify fails). Rebuild
-  frontend + restart backend.
-
-### Fix — backend serves the admin SPA (completes feat-005 wiring) (2026-06-28)
-- **Gap found:** feat-005's admin built fine, but it was **NOT actually reachable** from the App URL —
-  the backend had no route for `/`, so the embedded app showed Fiber's "Cannot GET /". feat-005 was
-  marked done on build/unit evidence; the embedded-serving wiring was missing.
-- **Fix:** `backend/main.go` now serves the built SPA AFTER the API/auth/health routes:
-  `app.Static("/", FRONTEND_DIST)` (default `../frontend/dist`, env-overridable) + a final `GET /*`
-  SPA fallback returning `index.html` that skips `/api`, `/auth`, `/web`, `/health`.
-- **Manual check (new binary on :5099):** `GET /` -> `index.html` (`<div id="root">`, title
-  "Announcement Bar App"); `GET /health` -> `{...,"msg":"ok"}` (not shadowed);
-  `GET /api/v1/announcement-bars/...` (no token) -> 401 (not shadowed). `go build` 0.
-- **Note:** restart the backend on :5005 (kill the old `go run .`) to pick this up; then the App URL
-  renders the admin.
-
-### Session 8 — feat-003..006 (backend API + public endpoint + admin UI + storefront) (2026-06-28)
-- **feat-002 DONE** (live OAuth install signed off). Built **feat-003 / feat-004 / feat-005 / feat-006**
-  test-first (AI Quality Loop §11):
-  - **feat-003** (backend admin CRUD + one-active invariant + anti-IDOR): `internal/handlers/bars.go`,
-    `internal/validate/bar.go`, `internal/middleware/admin.go` (session-token `dest` vs `:shop` -> 403).
-    Tests: CRUD round-trip, exactly-one-enabled invariant, 403/401, 404, 400.
-  - **feat-004** (public endpoint): `internal/handlers/public.go` — single active bar / null, server
-    expiry gate, no `title` leak, CORS `*`. Tests: 400 / null / expired-null / payload / shop isolation.
-  - **feat-005** (admin UI): ApiClient(+App Bridge token)->BaseRepository->AnnouncementBarRepository;
-    Redux `announcementBarSlice`; Polaris list (Active badge, Add/Edit/Delete) + editor (validation
-    mirrors backend) + `date-fns-tz`. tsc 0, vitest (tz round-trip), vite build 0 (1484 modules).
-  - **feat-006** (storefront): countdown math (vitest 5: math/expiry/3 formats), fetch+render+ticker,
-    Theme App Extension app-embed block; webpack build 0 -> `extensions/announcement-bar/assets/`.
-- **Verified:** `bash init.sh` exit 0, HARNESS GREEN (9 steps); backend all packages `ok`; both JS
-  tiers build + unit tests pass.
-- **HIGH-RISK note (feat-003/004):** logic + security fully unit/integration-tested; confirm the live
-  admin CRUD + storefront render on the dev store at the demo.
-- **Next:** **feat-007** (E2E demo script + full verify suite + capstone deliverables); feat-008
-  optional (live-ticking admin preview, cuttable).
-
-### Session 7 — feat-002 data model + OAuth install (in-progress, awaiting sign-off) (2026-06-28)
-Built test-first (TDD), AI Quality Loop §11. **feat-002 set `in-progress`.** HIGH risk → not marked
-done; awaiting human sign-off on the live install.
-
-**Completion Summary**
-- **Changed (backend/internal):** `models/announcement_bar.go` (GORM model; `shop` non-unique index;
-  all spec fields/defaults); `database.Migrate` (GORM AutoMigrate, called on boot in `main.go`);
-  `shopify/` (`AuthorizeURL`, `VerifyHMAC`, `ShopFromSessionToken` JWT `dest` decode,
-  `ExchangeCodeForToken` → token **discarded**); `handlers/auth.go` (`/auth` install start,
-  `/auth/callback` verify→exchange→discard→redirect). Wired routes + AutoMigrate in `main.go`.
-  Stateless: only the `announcement_bars` table; no shop/session/token table.
-- **Out-of-scope changes:** none.
-- **Verification result (raw):** `bash init.sh` → exit 0, HARNESS GREEN (9 steps). `go vet/build` = 0.
-  `go test ./...` all pass: config, **database integration** (AutoMigrate + 2-bars-per-shop coexist +
-  WHERE shop=? returns the set + fresh shop empty), handlers (health + **auth bad-HMAC → 401**),
-  shopify (HMAC valid/tampered, authorize URL, session-token `dest` decode + wrong-secret reject).
-  `DESCRIBE announcement_bars`: `id` PK auto_increment; `shop` varchar(255) **MUL** (non-unique);
-  `title` 120 NOT NULL; colors varchar(9) with defaults `#1A1A1A`/`#FFFFFF`/`#000000`;
-  `countdown_format` default `dd:hh:mm:ss`; timestamps.
-- **Security hardening (TDD, this pass):** `shopify.ShopIsValid` (regex
-  `^[a-z0-9][a-z0-9-]*\.myshopify\.com$`, case-insensitive) — open-redirect/SSRF guard applied in
-  BOTH `/auth` and `/auth/callback` (400 before using shop). CSRF: `/auth` sets a random
-  (`crypto/rand`) nonce in a short-lived HttpOnly cookie and passes it as `state`; `/auth/callback`
-  constant-time compares the cookie to the `state` query param (400 on mismatch) then clears it.
-  Tests: `evil.com` / `acme.myshopify.com.evil.com` rejected, `acme.myshopify.com` accepted; state
-  mismatch → 400. `go test ./...` all pass.
-- **Residual risks:** the live OAuth round-trip (approve → callback → token exchange) is only verified
-  by the unit-level HMAC + state gates; confirm end-to-end on a real install. HMAC is computed over
-  decoded, sorted params (matches the common Shopify impl) — confirm on the live callback.
-- **Not verified / NEEDS HUMAN SIGN-OFF:** acceptance item *"app installs on the dev store"* — the
-  live OAuth install on `sonnh-dev-store-3`. Requires running backend + tunnel + Partner-Dashboard
-  App URL `=/auth` and redirect URL `=/auth/callback`, then a real install. High risk → sign-off
-  before `done`.
-
-### Session 6 — feat-001 closed + feat-002 decisions baked (2026-06-28)
-- **feat-001 DONE** (status + evidence in `feature_list.json`): init.sh exit 0 HARNESS GREEN (9
-  steps); GET /health via ngrok returns the `{error,msg,data}` envelope.
-- **Baked feat-002 decisions into the harness:**
-  1. **Stateless / single table** — the only table is `announcement_bars`; admin auth via the App
-     Bridge session-token `dest` claim; the app never calls the Shopify Admin API; the OAuth callback
-     discards the access token; no shop/session/token table. (`ARCHITECTURE.md` §2, `questions.md` Q7,
-     feat-002 description.)
-  2. **Per-tier .env + godotenv** — `backend/.env.example` + `frontend/.env.example`
-     (`VITE_API_BASE_URL`, `VITE_SHOPIFY_API_KEY`); `main.go` loads `backend/.env` via
-     `godotenv.Load()` (error ignored so real env wins); `Config` gained `SHOPIFY_*`/`APP_*` fields
-     (added test-first); init.sh `cp -n` per tier; `.gitignore` + AGENTS §3 already per-tier.
-  3. **golang-migrate dropped** (last turn) — init.sh step 6 is now a one-line GORM note.
-  4. **Backend layout pinned** in AGENTS §2: `internal/{config,database,handlers,models,shopify,middleware}`.
-- **Verified:** `bash init.sh` exit 0 HARNESS GREEN (9 steps); backend `go test/build ./...` ok
-  (config test now covers the new Shopify fields).
-
-### Migration approach — golang-migrate removed (2026-06-28)
-- Decision: the app manages its schema with **GORM `AutoMigrate` on boot** (the `announcement_bars`
-  table is created/updated when the backend starts, in feat-002). The golang-migrate path is not
-  needed for a single-table app, so it was **removed**: dropped `init.sh`'s migrate step (now an
-  8-step script), and removed `migrate.up` / `MIGRATIONS_FOLDER` / `DATABASE_URL` from the root
-  `Makefile`. `AGENTS.md` §3 no longer says "runs migrations". `docs/plan.md`'s "Auto-migrate on boot"
-  already described the GORM approach.
-- Verified: `bash init.sh` still GREEN (steps 1–8); `make` targets (`db.up`/`db.down`/`db.admin`/
-  `db.shell`/`check`/`test`/`build`) parse and run.
+  - **Infra:** devDeps `@testing-library/react` / `jest-dom` / `user-event` / `jsdom`; `vite.config.ts`
+    `test` block (jsdom env + setup); `src/test/setup.ts` (jest-dom matchers + RTL `afterEach(cleanup)`
+    + `matchMedia`/`ResizeObserver` polyfills); `src/test/testUtils.tsx` (`renderWithProviders` + `makeStore`);
+    `src/test/factories.ts` (`makeBar`).
+  - **Refactor (behavior-preserving):** extracted the list search/sort/paginate logic out of `BarsList.tsx`
+    into pure `lib/barList.ts` (`filterSortBars`, `paginate`, `endValue`).
+  - **Verify harness:** `init.sh` steps 8/9 now run the frontend/storefront `npm test` + build (parity
+    with the backend `go test` step); `AGENTS.md` §6 verify commands corrected to the standalone
+    `npm test` (the tiers are not npm workspaces). Also fixed a latent `set -e` bug in step 7 — a bare
+    `out=$(go test)` assignment aborted before the Windows `.test.exe` flake tolerance could run; now
+    `if out="$(go test ...)"; then rc=0; else rc=$?; fi`.
+  - **New/strengthened tests (67 total, +55):** `lib/barList.test.ts` (20), `lib/color.test.ts` (6),
+    `lib/countdown.test.ts` (7), `store/announcementBarSlice.test.ts` (6: applyToggle one-active;
+    fetchBars fulfilled/rejected/pending), `components/Toggle.test.tsx` (4: aria/keyboard/disabled),
+    `pages/BarEditor.test.tsx` (7: invalid-submit BLOCKED ×4, valid create payload + store-local→UTC,
+    edit update-with-id, countdown reveal), `pages/BarsList.test.tsx` (4: pagination, optimistic toggle,
+    delete-steps-back, empty state), strengthened `lib/time.test.ts` (4: NY EDT, DST EST-vs-EDT,
+    Asia/Ho_Chi_Minh, invalid-input throws).
+- **Verification (raw):**
+  ```
+  npx vitest run
+   ✓ src/lib/countdown.test.ts (7)   ✓ src/lib/color.test.ts (6)   ✓ src/lib/barList.test.ts (20)
+   ✓ src/store/announcementBarSlice.test.ts (6)   ✓ src/lib/time.test.ts (4)   ✓ src/lib/barValidation.test.ts (9)
+   ✓ src/components/Toggle.test.tsx (4)   ✓ src/pages/BarsList.test.tsx (4)   ✓ src/pages/BarEditor.test.tsx (7)
+   Test Files  9 passed (9)
+        Tests  67 passed (67)
+  tsc --noEmit -> 0 ; vite build -> 0 ; storefront webpack -> 0
+  bash init.sh -> HARNESS GREEN (9/9): backend go test ok; frontend 67 vitest; storefront 5 vitest; all builds 0.
+  ```
+- **Two jsdom gaps fixed at the root (NOT by deleting assertions):** RTL auto-cleanup unregistered
+  (Vitest globals off) → "multiple elements" → added `afterEach(cleanup)`; Polaris needs
+  `ResizeObserver`/`matchMedia` → polyfilled in `setup.ts`. One selector scoped: a
+  `getByLabelText(/background color/i)` also matched the swatch button's aria-label → switched to
+  `getByRole("textbox", …)`. No production code weakened; no real bug surfaced by the tests.
+- **Residual risks:** component tests mock `barsRepo` + App Bridge (no real network/App Bridge);
+  search/sort/filter is covered at the logic layer (`lib/barList.test.ts`), not driven through the
+  `IndexFilters` DOM (portal/popover under jsdom is brittle); `ApiClient`'s axios interceptor is left
+  untested.
+- **Not verified / NOT done:** feat-005 stays **manual-verification** — the human signs off the live
+  admin. No real-browser/E2E run.
 
 ## How to use this file
 
-Each session appends a dated entry: Done / In-progress / Next / Blockers / Evidence. Keep it
-short and factual — it is the bridge between sessions alongside `session-handoff.md`.
+Each session appends a dated entry (Done / Next / Evidence) in **chronological** order. The
+feature-state source of truth is `.claude/feature_list.json`; keep this file short and factual — it
+is the bridge between sessions alongside `session-handoff.md`.

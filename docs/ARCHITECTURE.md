@@ -43,7 +43,7 @@ ApiClient→BaseRepo→     signed    PUT /:id · DELETE /:id  (CRUD)     ◄─
 | `shop`                 | varchar(255)   | NOT NULL, **INDEX (not unique)**. The `*.myshopify.com` domain. Tenant key — many bars share a shop.  |
 | `title`                | varchar(120)   | NOT NULL. Admin-facing label so the merchant can tell saved bars/drafts apart. Not shown on storefront.|
 | `enabled`              | boolean        | NOT NULL, default `false`. **At most one `enabled = true` per shop** (app-enforced invariant).        |
-| `message`              | varchar(255)   | NOT NULL when `enabled`. 1–200 chars. Bar text.                                                       |
+| `message`              | varchar(255)   | Required (1–200 chars). Bar text.                                                                     |
 | `background_color`     | varchar(9)     | NOT NULL. Hex `#RRGGBB` or `#RRGGBBAA`. Default `#1A1A1A`.                                             |
 | `text_color`           | varchar(9)     | NOT NULL. Hex. Default `#FFFFFF`.                                                                      |
 | `countdown_enabled`    | boolean        | NOT NULL, default `false`.                                                                            |
@@ -204,7 +204,7 @@ Two Polaris views under the app:
   (`createAsyncThunk` list/create/update/delete, holding the collection) registered in `store.ts`.
   Nav `<Link>` in the app nav, routes in the app router.
 - **Validation (native React state, inline `TextField` errors):** title required; message required
-  & ≤200 chars when enabled; if countdown enabled, deadline required and must be in the future at
+  & ≤200 chars (always required); if countdown enabled, deadline required and must be in the future at
   save; colors valid hex. Invalid fields render a red border + message via Polaris's `error` prop.
 
 ---

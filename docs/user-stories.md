@@ -42,7 +42,7 @@ NOW → execute directly. COMPLEX → see `complex-cases.md`. DISCUSS → see `q
 - **GIVEN** the merchant is on the admin settings page
 - **WHEN** they type a message (1–200 chars) and save with the bar enabled
 - **THEN** the message persists and is returned on reload
-- **AC:** message ≤200 chars persists; empty message while `enabled` is rejected with a visible
+- **AC:** message ≤200 chars persists; an empty message is always rejected with a visible
   error; reload shows the saved message.
 
 ## S3 — Style colors (COMPLEX)

@@ -5,7 +5,6 @@ import {
   Layout,
   FormLayout,
   TextField,
-  Checkbox,
   Select,
   BlockStack,
   InlineStack,
@@ -20,21 +19,20 @@ import { defaultBarInput, type Bar, type BarInput, type CountdownFormat } from "
 import { storeLocalToUTC, utcToStoreLocal } from "../lib/time";
 import { formatRemaining } from "../lib/countdown";
 import { hexToHsba, hsbaToHex } from "../lib/color";
+import { computeErrors, hexRe, MAX_TITLE, MAX_MESSAGE, type Errors } from "../lib/barValidation";
+import { Toggle } from "../components/Toggle";
 
 const TZ = "UTC";
-const hexRe = /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 const SAVE_BAR_ID = "bar-editor-save-bar";
-
-type FieldKey = "title" | "message" | "background_color" | "text_color" | "countdown_bg_color" | "countdown_text_color" | "deadline";
-type Errors = Partial<Record<FieldKey, string>>;
 
 // Minimal shape of the App Bridge save-bar API (provided by window.shopify in the embedded admin).
 type AppBridge = {
   saveBar: { show: (id: string) => void; hide: (id: string) => void; leaveConfirmation: () => Promise<void> };
+  toast: { show: (message: string, options?: { duration?: number; isError?: boolean }) => void };
 };
 
 // Color field: a swatch that opens a Polaris ColorPicker popover + a hex TextField (inline error).
-function HexField({ label, value, onChange, error, hint }: { label: string; value: string; onChange: (v: string) => void; error?: string; hint?: string }) {
+function HexField({ label, value, onChange, error, hint, required }: { label: string; value: string; onChange: (v: string) => void; error?: string; hint?: string; required?: boolean }) {
   const [open, setOpen] = useState(false);
   const valid = hexRe.test(value);
   const swatch = (
@@ -49,6 +47,7 @@ function HexField({ label, value, onChange, error, hint }: { label: string; valu
     <BlockStack gap="100">
       <Text as="span" variant="bodySm">
         {label}
+        {required ? <Text as="span" tone="critical"> *</Text> : null}
       </Text>
       <InlineStack gap="200" blockAlign="center">
         <Popover active={open} activator={swatch} onClose={() => setOpen(false)} preferredAlignment="left">
@@ -69,24 +68,6 @@ function HexField({ label, value, onChange, error, hint }: { label: string; valu
   );
 }
 
-function computeErrors(input: BarInput, deadlineLocal: string): Errors {
-  const e: Errors = {};
-  if (!input.title.trim()) e.title = "Title is required.";
-  if (input.enabled && !input.message.trim()) e.message = "Message is required when the bar is enabled.";
-  const colors: [FieldKey, string][] = [
-    ["background_color", input.background_color],
-    ["text_color", input.text_color],
-    ["countdown_bg_color", input.countdown_bg_color],
-    ["countdown_text_color", input.countdown_text_color],
-  ];
-  for (const [k, v] of colors) if (!hexRe.test(v)) e[k] = "Enter a valid hex color, e.g. #1A1A1A.";
-  if (input.countdown_enabled) {
-    if (!deadlineLocal) e.deadline = "Deadline is required when the countdown is on.";
-    else if (new Date(storeLocalToUTC(deadlineLocal, TZ)).getTime() <= Date.now()) e.deadline = "Deadline must be in the future.";
-  }
-  return e;
-}
-
 // Live preview — re-renders as fields change; ticks the countdown every second.
 function LivePreview({ form, deadlineLocal }: { form: BarInput; deadlineLocal: string }) {
   const [, setTick] = useState(0);
@@ -103,7 +84,7 @@ function LivePreview({ form, deadlineLocal }: { form: BarInput; deadlineLocal: s
   }
 
   return (
-    <div style={{ background: "repeating-conic-gradient(#eef0f2 0% 25%, #f6f7f8 0% 50%) 50% / 22px 22px", padding: 22, borderRadius: 10 }}>
+    <div style={{ background: "repeating-conic-gradient(#eef0f2 0% 25%, #f6f7f8 0% 50%) 50% / 22px 22px", borderRadius: 10, minHeight: 440, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div
         style={{
           display: "flex",
@@ -112,6 +93,9 @@ function LivePreview({ form, deadlineLocal }: { form: BarInput; deadlineLocal: s
           gap: 16,
           flexWrap: "wrap",
           padding: "11px 18px",
+          minHeight: 48,
+          boxSizing: "border-box",
+          width: "100%",
           fontWeight: 600,
           textAlign: "center",
           background: hexRe.test(form.background_color) ? form.background_color : "#1A1A1A",
@@ -147,14 +131,20 @@ export function BarEditor({ bar, onDone }: { bar: Bar | null; onDone: () => void
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
 
+  const isEdit = bar !== null;
   const dirty = JSON.stringify(form) !== JSON.stringify(initial) || deadlineLocal !== initialDeadline.current;
 
-  // Contextual save bar follows the dirty state; hide on unmount.
+  // Edit mode uses the App Bridge contextual save bar (dirty-driven). Add mode uses a page primary
+  // action ("Create bar") instead, so neither save-bar effect runs while creating a new bar.
   useEffect(() => {
+    if (!isEdit) return;
     if (dirty) shopify.saveBar.show(SAVE_BAR_ID);
     else shopify.saveBar.hide(SAVE_BAR_ID);
-  }, [dirty, shopify]);
-  useEffect(() => () => shopify.saveBar.hide(SAVE_BAR_ID), [shopify]);
+  }, [dirty, shopify, isEdit]);
+  useEffect(() => {
+    if (!isEdit) return;
+    return () => shopify.saveBar.hide(SAVE_BAR_ID);
+  }, [shopify, isEdit]);
 
   function set<K extends keyof BarInput>(key: K, value: BarInput[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -166,7 +156,7 @@ export function BarEditor({ bar, onDone }: { bar: Bar | null; onDone: () => void
   }
 
   async function save() {
-    const e = computeErrors(form, deadlineLocal);
+    const e = computeErrors(form, deadlineLocal, TZ);
     if (Object.values(e).some(Boolean)) {
       setErrors(e);
       return;
@@ -177,9 +167,14 @@ export function BarEditor({ bar, onDone }: { bar: Bar | null; onDone: () => void
     };
     setSaving(true);
     try {
-      if (bar) await barsRepo.update(bar.id, payload);
-      else await barsRepo.create(payload);
-      shopify.saveBar.hide(SAVE_BAR_ID);
+      if (bar) {
+        await barsRepo.update(bar.id, payload);
+        shopify.toast.show("Bar saved");
+      } else {
+        await barsRepo.create(payload);
+        shopify.toast.show("Bar created");
+      }
+      if (isEdit) shopify.saveBar.hide(SAVE_BAR_ID);
       onDone();
     } finally {
       setSaving(false);
@@ -192,9 +187,10 @@ export function BarEditor({ bar, onDone }: { bar: Bar | null; onDone: () => void
     setErrors({});
   }
 
-  // Block leaving with unsaved changes (App Bridge shows the leave-confirmation modal).
+  // In edit mode, block leaving with unsaved changes (App Bridge leave-confirmation modal).
+  // In add mode there is no save bar, so back just returns to the list.
   async function handleBack() {
-    if (!dirty) {
+    if (!isEdit || !dirty) {
       onDone();
       return;
     }
@@ -213,14 +209,21 @@ export function BarEditor({ bar, onDone }: { bar: Bar | null; onDone: () => void
   ];
 
   return (
-    <Page fullWidth title={bar ? "Edit bar" : "Add bar"} backAction={{ content: "Announcement bars", onAction: handleBack }}>
-      <SaveBar id={SAVE_BAR_ID}>
-        {/* App Bridge styles these; `variant` is a custom attribute. */}
-        <button {...({ variant: "primary" } as Record<string, unknown>)} onClick={save} disabled={saving}>
-          Save
-        </button>
-        <button onClick={discard}>Discard</button>
-      </SaveBar>
+    <Page
+      fullWidth
+      title={bar ? "Edit bar" : "Add bar"}
+      backAction={{ content: "Announcement bars", onAction: handleBack }}
+      primaryAction={isEdit ? undefined : { content: "Create bar", onAction: save, loading: saving }}
+    >
+      {isEdit && (
+        <SaveBar id={SAVE_BAR_ID}>
+          {/* App Bridge styles these; `variant` is a custom attribute. */}
+          <button {...({ variant: "primary" } as Record<string, unknown>)} onClick={save} disabled={saving}>
+            Save
+          </button>
+          <button onClick={discard}>Discard</button>
+        </SaveBar>
+      )}
 
       <Layout>
         {/* Settings — narrow (oneThird) column on the left */}
@@ -232,11 +235,16 @@ export function BarEditor({ bar, onDone }: { bar: Bar | null; onDone: () => void
                   Bar settings
                 </Text>
                 <FormLayout>
-                  <TextField label="Title" value={form.title} onChange={(v) => set("title", v)} autoComplete="off" error={errors.title} helpText="Internal label only — shown in your admin list, never on the storefront." />
-                  <Checkbox label="Enabled (active on storefront)" checked={form.enabled} onChange={(v) => set("enabled", v)} helpText="Enabling this deactivates the others — at most one bar can be active per shop." />
-                  <TextField label="Message" value={form.message} onChange={(v) => set("message", v)} multiline autoComplete="off" error={errors.message} helpText="1–200 characters. The text shown on the bar." />
-                  <HexField label="Background color" value={form.background_color} onChange={(v) => set("background_color", v)} error={errors.background_color} hint="Hex, e.g. #1A1A1A." />
-                  <HexField label="Text color" value={form.text_color} onChange={(v) => set("text_color", v)} error={errors.text_color} hint="Hex, e.g. #FFFFFF." />
+                  <TextField label="Title" requiredIndicator value={form.title} onChange={(v) => set("title", v)} autoComplete="off" error={errors.title} maxLength={MAX_TITLE} />
+                  <TextField label="Message" requiredIndicator value={form.message} onChange={(v) => set("message", v)} multiline autoComplete="off" error={errors.message} maxLength={MAX_MESSAGE} />
+                  <InlineStack gap="300" blockAlign="center">
+                    <Toggle checked={form.enabled} onChange={(v) => set("enabled", v)} label="Enabled (active on storefront)" />
+                    <Text as="span" fontWeight="semibold">
+                      Enabled (active on storefront)
+                    </Text>
+                  </InlineStack>
+                  <HexField label="Background color" value={form.background_color} onChange={(v) => set("background_color", v)} error={errors.background_color} required />
+                  <HexField label="Text color" value={form.text_color} onChange={(v) => set("text_color", v)} error={errors.text_color} required />
                 </FormLayout>
               </BlockStack>
             </Card>
@@ -245,12 +253,17 @@ export function BarEditor({ bar, onDone }: { bar: Bar | null; onDone: () => void
                 <Text as="h3" variant="headingSm">
                   Countdown timer
                 </Text>
-                <Checkbox label="Enable countdown" checked={form.countdown_enabled} onChange={(v) => set("countdown_enabled", v)} />
+                <InlineStack gap="300" blockAlign="center">
+                  <Toggle checked={form.countdown_enabled} onChange={(v) => set("countdown_enabled", v)} label="Enable countdown" />
+                  <Text as="span" fontWeight="semibold">
+                    Enable countdown
+                  </Text>
+                </InlineStack>
                 {form.countdown_enabled && (
                   <FormLayout>
-                    <TextField label="Countdown deadline" type="datetime-local" value={deadlineLocal} onChange={setDeadline} autoComplete="off" error={errors.deadline} helpText="Interpreted in your store timezone, then stored as UTC. Must be in the future." />
-                    <HexField label="Countdown background" value={form.countdown_bg_color} onChange={(v) => set("countdown_bg_color", v)} error={errors.countdown_bg_color} />
-                    <HexField label="Countdown text color" value={form.countdown_text_color} onChange={(v) => set("countdown_text_color", v)} error={errors.countdown_text_color} />
+                    <TextField label="Countdown deadline" requiredIndicator type="datetime-local" value={deadlineLocal} onChange={setDeadline} autoComplete="off" error={errors.deadline} />
+                    <HexField label="Countdown background" value={form.countdown_bg_color} onChange={(v) => set("countdown_bg_color", v)} error={errors.countdown_bg_color} required />
+                    <HexField label="Countdown text color" value={form.countdown_text_color} onChange={(v) => set("countdown_text_color", v)} error={errors.countdown_text_color} required />
                     <Select label="Countdown format" options={formats} value={form.countdown_format} onChange={(v) => set("countdown_format", v as CountdownFormat)} />
                   </FormLayout>
                 )}
@@ -259,8 +272,9 @@ export function BarEditor({ bar, onDone }: { bar: Bar | null; onDone: () => void
           </BlockStack>
         </Layout.Section>
 
-        {/* Live preview — wide column on the right */}
+        {/* Live preview — wide column on the right; sticky so it stays in view while scrolling. */}
         <Layout.Section>
+          <div style={{ position: "sticky", top: 16 }}>
           <Card>
             <BlockStack gap="300">
               <InlineStack align="space-between" blockAlign="center">
@@ -275,6 +289,7 @@ export function BarEditor({ bar, onDone }: { bar: Bar | null; onDone: () => void
               </Text>
             </BlockStack>
           </Card>
+          </div>
         </Layout.Section>
       </Layout>
     </Page>

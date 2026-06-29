@@ -39,7 +39,7 @@ order: **session/data model → backend admin API → public endpoint → admin 
   Bridge session-token `dest` claim in ALL modes (dev included) and compare to `:shop`; `403` on
   mismatch. (Dev-mode derivation per `questions.md` Q2.) Any `:id` must belong to that shop, else
   `404`.
-- Per-bar validation before save: `title` required; hex colors; `message` required when `enabled`;
+- Per-bar validation before save: `title` required; `message` required (always); hex colors;
   future `countdown_end_at` when countdown enabled. New bars default `enabled = false`.
 - **One-active invariant:** when a create/update sets `enabled = true`, the SAME transaction sets
   `enabled = false` on all OTHER bars of that shop, so exactly one stays active.

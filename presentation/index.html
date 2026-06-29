@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Announcement Bar App — Đồ án cuối khóa</title>
+    <style>
+      :root {
+        --bg: #0a0e16;
+        --bg2: #0e1422;
+        --panel: #10182a;
+        --panel2: #0c1322;
+        --ink: #e6edfb;
+        --body: #c8d3e6;
+        --muted: #8693ad;
+        --line: #1f2c47;
+        --green: #3ddc84;
+        --cyan: #7fd3ff;
+        --amber: #ffc66b;
+        --magenta: #e58fd8;
+        --code-bg: #070b13;
+        --chrome: #0b1220;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      body {
+        font-family:
+          ui-monospace, "SF Mono", "Cascadia Code", Consolas, "Liberation Mono",
+          monospace;
+        background: var(--bg);
+        color: var(--body);
+        overflow: hidden;
+      }
+      /* scanline + subtle grid texture (CSS only, low opacity) */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 1;
+        background-image:
+          linear-gradient(rgba(61, 220, 132, 0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(61, 220, 132, 0.025) 1px, transparent 1px);
+        background-size: 34px 34px;
+      }
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 1;
+        opacity: 0.35;
+        background: repeating-linear-gradient(
+          0deg,
+          rgba(0, 0, 0, 0) 0px,
+          rgba(0, 0, 0, 0) 2px,
+          rgba(0, 0, 0, 0.16) 3px,
+          rgba(0, 0, 0, 0) 4px
+        );
+      }
+
+      .deck {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 34px 40px 76px;
+        z-index: 2;
+      }
+
+      /* terminal window frame */
+      .slide {
+        display: none;
+        width: 100%;
+        max-width: 1120px;
+        max-height: 100%;
+        background: linear-gradient(180deg, var(--panel), var(--panel2));
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow:
+          0 24px 70px rgba(0, 0, 0, 0.55),
+          0 0 0 1px rgba(61, 220, 132, 0.05) inset;
+        animation: fade 0.3s ease;
+      }
+      .slide.active {
+        display: flex;
+        flex-direction: column;
+      }
+      @keyframes fade {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      .winbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+        background: var(--chrome);
+        border-bottom: 1px solid var(--line);
+        padding: 9px 14px;
+      }
+      .lights {
+        display: flex;
+        gap: 7px;
+      }
+      .lt {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+      }
+      .lt.r {
+        background: #ff5f57;
+      }
+      .lt.y {
+        background: #febc2e;
+      }
+      .lt.g {
+        background: #28c840;
+      }
+      .wintab {
+        font-size: 13px;
+        color: #94a6c9;
+        letter-spacing: 0.01em;
+      }
+      .wintab .pmt {
+        color: var(--green);
+      }
+      .wintab .pth {
+        color: var(--cyan);
+      }
+
+      .body {
+        padding: 26px 34px;
+        overflow: auto;
+        flex: 1;
+      }
+      .body::-webkit-scrollbar {
+        width: 9px;
+        height: 9px;
+      }
+      .body::-webkit-scrollbar-thumb {
+        background: #243355;
+        border-radius: 6px;
+      }
+
+      .statusbar {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        flex-wrap: wrap;
+        background: #0a101c;
+        border-top: 1px solid var(--line);
+        padding: 6px 16px;
+        font-size: 11.5px;
+        color: #6f7da0;
+        letter-spacing: 0.02em;
+      }
+      .statusbar .mode {
+        color: #0a0e16;
+        background: var(--green);
+        font-weight: 700;
+        padding: 1px 8px;
+        border-radius: 3px;
+      }
+      .statusbar .ok {
+        color: var(--green);
+      }
+
+      /* shell comment eyebrow */
+      .eyebrow {
+        display: inline-block;
+        font-size: 12.5px;
+        letter-spacing: 0.06em;
+        color: var(--green);
+        margin-bottom: 14px;
+        font-weight: 600;
+      }
+      .eyebrow::before {
+        content: "# ";
+        color: var(--muted);
+      }
+
+      h1 {
+        font-size: 46px;
+        line-height: 1.06;
+        margin: 0.05em 0 0.2em;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        color: #fff;
+      }
+      h2 {
+        font-size: 36px;
+        line-height: 1.12;
+        margin: 0 0 0.45em;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        color: #fff;
+      }
+      h2 .pmt {
+        color: var(--green);
+        font-weight: 700;
+      }
+      h3 {
+        font-size: 18px;
+        margin: 0 0 0.35em;
+        font-weight: 700;
+        color: var(--cyan);
+      }
+      p {
+        font-size: 17px;
+        line-height: 1.55;
+        color: var(--body);
+        margin: 0.45em 0;
+      }
+      .lead {
+        font-size: 19px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      strong {
+        color: #fff;
+        font-weight: 700;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .grn {
+        color: var(--green);
+      }
+      .cyn {
+        color: var(--cyan);
+      }
+      .amb {
+        color: var(--amber);
+      }
+      .mag {
+        color: var(--magenta);
+      }
+
+      ul {
+        margin: 0.3em 0;
+        padding-left: 0;
+        list-style: none;
+      }
+      li {
+        font-size: 16.5px;
+        line-height: 1.5;
+        margin: 0.5em 0;
+        color: var(--body);
+        padding-left: 1.5em;
+        position: relative;
+      }
+      li::before {
+        content: "▸";
+        position: absolute;
+        left: 0;
+        color: var(--cyan);
+      }
+      li.ok::before {
+        content: "✓";
+        color: var(--green);
+      }
+      li.warn::before {
+        content: "!";
+        color: var(--amber);
+        font-weight: 800;
+      }
+      li b,
+      li strong {
+        color: #fff;
+      }
+
+      .cursor {
+        display: inline-block;
+        width: 11px;
+        height: 1.05em;
+        background: var(--green);
+        vertical-align: -2px;
+        margin-left: 3px;
+        animation: blink 1.05s steps(1) infinite;
+      }
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+      }
+      .g2 {
+        grid-template-columns: 1fr 1fr;
+      }
+      .g3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .card {
+        background: var(--code-bg);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px 18px;
+      }
+      .card h3 {
+        margin-bottom: 0.4em;
+      }
+      .card.grn {
+        border-color: #1d6b43;
+      }
+      .card.cyn {
+        border-color: #1f5a7d;
+      }
+      .card.amb {
+        border-color: #7d6630;
+      }
+      .card.mag {
+        border-color: #6b3a63;
+      }
+
+      .chip {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 5px;
+        margin: 2px 3px 2px 0;
+        background: rgba(127, 211, 255, 0.08);
+        color: var(--cyan);
+        border: 1px solid #1f5a7d;
+      }
+      .chip.g {
+        background: rgba(61, 220, 132, 0.08);
+        color: var(--green);
+        border-color: #1d6b43;
+      }
+      .chip.a {
+        background: rgba(255, 198, 107, 0.08);
+        color: var(--amber);
+        border-color: #7d6630;
+      }
+      .chip.m {
+        background: rgba(229, 143, 216, 0.08);
+        color: var(--magenta);
+        border-color: #6b3a63;
+      }
+
+      /* code/output block */
+      .term {
+        background: var(--code-bg);
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 14px 16px;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #cfe;
+        overflow: auto;
+        margin: 0.5em 0;
+      }
+      .term .c {
+        color: var(--muted);
+      } /* comment */
+      .term .p {
+        color: var(--green);
+      } /* prompt */
+      .term .o {
+        color: var(--body);
+      } /* output */
+      .term .ok {
+        color: var(--green);
+      }
+      .term .warn {
+        color: var(--amber);
+      }
+      .term .err {
+        color: #ff7a7a;
+      }
+      .term pre {
+        margin: 0;
+        font: inherit;
+        white-space: pre;
+      }
+      .ascii {
+        background: var(--code-bg);
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 14px 16px;
+        font-size: 12.5px;
+        line-height: 1.45;
+        color: #bfe6ff;
+        white-space: pre;
+        overflow: auto;
+      }
+      .ascii .lbl {
+        color: var(--green);
+      }
+      .ascii .ar {
+        color: var(--amber);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 9px 11px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      th {
+        color: var(--green);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+      td.k {
+        color: var(--cyan);
+      }
+      td.m {
+        font-family: inherit;
+        color: var(--body);
+      }
+
+      /* DAG */
+      .dag {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        align-items: center;
+        font-size: 13px;
+      }
+      .node {
+        background: #0d1626;
+        border: 1px solid #2a3a5e;
+        border-radius: 7px;
+        padding: 6px 10px;
+        color: #cfe;
+      }
+      .node.done {
+        background: #0f2b20;
+        border-color: #1d6b43;
+        color: var(--green);
+      }
+      .node.done::before {
+        content: "✓ ";
+      }
+      .node.opt {
+        border-style: dashed;
+        color: var(--muted);
+      }
+      .arrow {
+        color: #4a5a82;
+      }
+
+      .kv {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 6px 16px;
+        font-size: 15.5px;
+        margin: 0.4em 0;
+      }
+      .kv .key {
+        color: var(--green);
+      }
+
+      .note {
+        background: rgba(255, 198, 107, 0.05);
+        border: 1px solid #7d6630;
+        border-radius: 9px;
+        padding: 13px 16px;
+        margin: 0.5em 0;
+      }
+      .note h3 {
+        color: var(--amber);
+      }
+      .why {
+        background: rgba(61, 220, 132, 0.05);
+        border: 1px solid #1d6b43;
+        border-radius: 9px;
+        padding: 13px 16px;
+        margin: 0.5em 0;
+      }
+      .why h3 {
+        color: var(--green);
+      }
+
+      /* title */
+      .title-body {
+        justify-content: center;
+      }
+      .title-body h1 {
+        font-size: 60px;
+        background: linear-gradient(92deg, #fff, #7fd3ff 50%, #3ddc84);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .author {
+        margin-top: 30px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+      .badge {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 9px 14px;
+        font-size: 14px;
+        color: var(--body);
+      }
+      .badge b {
+        color: var(--green);
+      }
+
+      /* nav chrome */
+      .progress {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #7fd3ff, #3ddc84);
+        z-index: 30;
+        transition: width 0.3s ease;
+        width: 0;
+      }
+      .navbar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 54px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 22px;
+        background: linear-gradient(
+          0deg,
+          rgba(7, 11, 19, 0.97),
+          rgba(7, 11, 19, 0.6)
+        );
+        border-top: 1px solid var(--line);
+        backdrop-filter: blur(6px);
+        z-index: 20;
+      }
+      .nbtn {
+        font: inherit;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        color: var(--ink);
+        background: #13203a;
+        border: 1px solid #2a3a5e;
+        border-radius: 7px;
+        padding: 7px 13px;
+      }
+      .nbtn:hover {
+        background: #1a2c4c;
+      }
+      .nbtn:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+      .counter {
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+        color: var(--cyan);
+        font-size: 13px;
+        min-width: 62px;
+        text-align: center;
+      }
+      .hint {
+        font-size: 11.5px;
+        color: #5a678a;
+      }
+      .decktag {
+        font-size: 12px;
+        color: var(--muted);
+        margin-left: auto;
+      }
+      .decktag .grn {
+        color: var(--green);
+      }
+
+      @media (max-width: 860px) {
+        .deck {
+          padding: 14px 12px 70px;
+        }
+        .body {
+          padding: 18px 18px;
+        }
+        h1 {
+          font-size: 30px;
+        }
+        .title-body h1 {
+          font-size: 34px;
+        }
+        h2 {
+          font-size: 24px;
+        }
+        .g2,
+        .g3 {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress" id="progress"></div>
+    <div class="deck" id="deck"></div>
+
+    <div class="navbar">
+      <button class="nbtn" id="prev">‹ prev</button>
+      <button class="nbtn" id="next">next ›</button>
+      <span class="counter" id="counter">1 / 1</span>
+      <span class="hint">← → / Space · Home/End · #sN deep-link</span>
+      <span class="decktag"
+        >announcement-bar-app · <span class="grn">init.sh: GREEN</span></span
+      >
+      <!-- chú thích: text điều hướng giữ nguyên dạng phím tắt -->
+    </div>
+
+    <script>
+      /* ---------- helpers ---------- */
+      const slides = [];
+      /* slide(tab, innerHTML, statusbarRight)  -> wraps in terminal-window frame */
+      function slide(tab, html, status) {
+        const st = status || 'init.sh: <span class="ok">GREEN</span>';
+        slides.push(
+          '<section class="slide">' +
+            '<div class="winbar"><span class="lights"><span class="lt r"></span><span class="lt y"></span><span class="lt g"></span></span>' +
+            '<span class="wintab">' +
+            tab +
+            "</span></div>" +
+            '<div class="body">' +
+            html +
+            "</div>" +
+            '<div class="statusbar"><span class="mode">-- NORMAL --</span>' +
+            '<span>announcement-bar-app</span><span>main <span class="ok">✓</span></span>' +
+            '<span style="margin-left:auto">' +
+            st +
+            "</span></div>" +
+            "</section>",
+        );
+      }
+      function tab(file, label) {
+        return (
+          '<span class="pmt">~/announcement-bar-app $</span> <span class="pth">' +
+          file +
+          "</span> — " +
+          label
+        );
+      }
+
+      /* ============================ SLIDE 1 — TITLE ============================ */
+      slide(
+        tab("slide-01", "title"),
+        '<div class="body title-body" style="padding:0">' +
+          '<div class="eyebrow">Khóa học AI Coding — Đồ án cuối khóa</div>' +
+          "<h1>Announcement Bar App</h1>" +
+          '<p class="lead" style="max-width:780px">Một Shopify embedded app để quản lý nhiều thanh thông báo đã lưu ' +
+          '— <span class="grn">mỗi lần chỉ bật đúng một thanh</span> — hiển thị dính (sticky) trên storefront kèm đồng hồ đếm ngược chạy thật. ' +
+          'Xây dựng bằng một <span class="cyn">AI harness</span> kỷ luật.<span class="cursor"></span></p>' +
+          '<div class="author">' +
+          /* EDIT presenter name here */
+          '<span class="badge">người trình bày: <b>Nguyễn Hoa Sơn</b></span>' +
+          '<span class="badge">Khóa học AI Coding — Đồ án cuối khóa</span>' +
+          '<span class="badge">Shopify app 3 tầng</span>' +
+          '<span class="badge">Go · React · Webpack</span>' +
+          "</div></div>",
+        'nhấn <span class="ok">→</span> để bắt đầu',
+      );
+
+      /* ============================ SLIDE 2 — AGENDA ============================ */
+      slide(
+        tab("slide-02", "agenda"),
+        '<div class="eyebrow">những nội dung sẽ trình bày</div>' +
+          '<h2><span class="pmt">$</span> cat agenda.md</h2>' +
+          '<div class="grid g2">' +
+          "<ul>" +
+          '<li class="ok"><b>Mục tiêu</b> — app làm được gì</li>' +
+          '<li class="ok"><b>Phương pháp luận</b> &amp; bộ harness 5 file lõi</li>' +
+          '<li class="ok"><b>Từ ý tưởng đến kế hoạch</b> — brainstorm → DAG</li>' +
+          '<li class="ok"><b>Tech stack · kiến trúc · mô hình dữ liệu</b></li>' +
+          "</ul>" +
+          "<ul>" +
+          '<li class="ok"><b>Cách hiện thực hoá từng task</b> — TDD → verify → debug</li>' +
+          '<li class="ok"><b>Kết quả</b> — app 3 tầng chạy được, cài thật</li>' +
+          '<li class="ok"><b>Khó khăn</b> &amp; cách xử lý · <b>Bài học rút ra</b></li>' +
+          '<li class="ok"><b>Sản phẩm bàn giao</b> &amp; Hỏi-đáp</li>' +
+          "</ul>" +
+          "</div>",
+      );
+
+      /* ============================ SLIDE 3 — GOAL ============================ */
+      slide(
+        tab("slide-03", "goal"),
+        '<div class="eyebrow">mục tiêu — app làm được gì</div>' +
+          "<h2>Một thanh thông báo có style ở đầu cửa hàng</h2>" +
+          '<p class="lead">Một cách nhanh, không cần code để merchant Shopify hiển thị một thanh thông báo có style — ' +
+          "kèm đồng hồ đếm ngược tùy chọn — gõ nội dung trong admin, hiện ngay trên store, và tự gỡ khi khuyến mãi kết thúc.</p>" +
+          '<div class="grid g2" style="margin-top:14px">' +
+          '<div class="card grn"><h3>Mô hình</h3><ul>' +
+          '<li class="ok">Một shop lưu <b>nhiều</b> thanh (CRUD đầy đủ)</li>' +
+          '<li class="ok"><b>Tối đa MỘT thanh được bật</b> tại một thời điểm</li>' +
+          '<li class="ok">Thanh đang bật hiển thị <b>trên toàn site</b> ở đầu trang</li>' +
+          '<li class="ok"><b>Đồng hồ đếm ngược theo ngày cố định</b> (tùy chọn)</li>' +
+          "</ul></div>" +
+          '<div class="card cyn"><h3>Merchant mục tiêu</h3>' +
+          "<p>Merchant Shopify nhỏ và vừa đang chạy <b>khuyến mãi có thời hạn</b> — flash sale, " +
+          "hạn chót miễn phí ship, ưu đãi dịp lễ — muốn tự cấu hình một thanh thông báo " +
+          "mà không phải sửa code theme hay thuê developer.</p></div>" +
+          "</div>" +
+          '<div class="note"><h3>Chủ đích làm gọn (ngoài phạm vi)</h3>' +
+          '<p style="margin:0">Không xếp chồng / xoay vòng, không nhắm theo từng trang, không hẹn giờ bật, không nút CTA hay nút tắt "X". ' +
+          "Nhiều thanh được <b>lưu</b>; đúng một thanh được <b>hiển thị</b>. Cách này giữ luồng dữ liệu nhỏ gọn và dễ demo.</p></div>",
+      );
+
+      /* ============================ SLIDE 4 — THESIS ============================ */
+      slide(
+        tab("slide-04", "thesis"),
+        '<div class="eyebrow">kiến thức khóa học — phương pháp luận</div>' +
+          "<h2>Coi AI như một junior giỏi nhưng hiểu đúng nghĩa đen</h2>" +
+          '<p class="lead">Đừng "prompt rồi cầu may". Hãy bọc một <span class="grn">harness</span> quanh AI: luật lệ rõ ràng, ' +
+          'phạm vi đã hoạch định, guardrails tự động, và thói quen "có bằng chứng mới được coi là xong" — để tốc độ của AI không biến thành cẩu thả.</p>' +
+          '<div class="term" style="margin-top:18px"><pre>' +
+          '<span class="c"># AI nhanh nhưng *hiểu đúng nghĩa đen*. Harness cung cấp phần</span>\n' +
+          '<span class="c"># phán đoán mà nếu không thì con người phải lặp lại trong mọi prompt:</span>\n\n' +
+          '<span class="p">$</span> <span class="o">phạm vi</span>     <span class="c">→ một đồ thị phụ thuộc đã hoạch định, không phải cảm tính</span>\n' +
+          '<span class="p">$</span> <span class="o">luật lệ</span>     <span class="c">→ viết một lần, nằm trong repo</span>\n' +
+          '<span class="p">$</span> <span class="o">kiểm chứng</span>  <span class="c">→ bằng chứng, không bao giờ là lời hứa</span>\n' +
+          '<span class="p">$</span> <span class="o">liên tục</span>    <span class="c">→ bàn giao trung thực giữa các phiên</span><span class="cursor"></span></pre></div>',
+      );
+
+      /* ============================ SLIDE 5 — 5 SUBSYSTEMS ============================ */
+      slide(
+        tab("slide-05", "harness"),
+        '<div class="eyebrow">kiến thức khóa học — harness 5 phân hệ</div>' +
+          "<h2>Năm file lõi, năm nhiệm vụ</h2>" +
+          "<table>" +
+          "<tr><th>Phân hệ</th><th>Trả lời câu hỏi gì</th><th>Nằm ở đâu</th></tr>" +
+          '<tr><td class="k">Guidance (định hướng)</td><td>Luật lệ / nguồn chân lý là gì?</td><td class="m">AGENTS.md · CLAUDE.md</td></tr>' +
+          '<tr><td class="k">Tools (công cụ)</td><td>AI được phép chạy gì?</td><td class="m">.claude/settings.json (permissions)</td></tr>' +
+          '<tr><td class="k">Environment (môi trường)</td><td>Làm sao tái lập được?</td><td class="m">docker-compose · .env.example · init.sh</td></tr>' +
+          '<tr><td class="k">State (trạng thái)</td><td>Phạm vi, nhật ký &amp; bàn giao?</td><td class="m">feature_list.json · progress.md · session-handoff.md</td></tr>' +
+          '<tr><td class="k">Feedback (phản hồi)</td><td>Làm sao biết nó chạy đúng?</td><td class="m">bộ kiểm init.sh + hooks/guardrails</td></tr>' +
+          "</table>" +
+          '<div class="why" style="margin-top:16px"><h3>AGENTS.md = nguồn chân lý (system of record)</h3>' +
+          '<p style="margin:0">CLAUDE.md chỉ là một stub riêng cho Claude, trỏ về AGENTS.md — bản hợp đồng dùng chung cho mọi model. ' +
+          "Repo <b>chính là</b> spec: bất cứ thứ gì không được viết ra ở đó đều coi như không tồn tại.</p></div>",
+      );
+
+      /* ============================ SLIDE 6 — IDEA TO PLAN ============================ */
+      slide(
+        tab("slide-06", "planning"),
+        '<div class="eyebrow">kiến thức khóa học — từ ý tưởng đến kế hoạch</div>' +
+          "<h2>Brainstorm → docs → user stories → DAG</h2>" +
+          '<div class="grid g2">' +
+          '<div class="card"><h3 class="grn">1 · Brainstorm (chưa code)</h3>' +
+          '<p style="font-size:15px;margin:.3em 0">Hỏi từng câu một; ép AI <b>phản biện</b> lại việc phình phạm vi. ' +
+          'Phần thưởng là <b>danh sách "ngoài phạm vi"</b>.</p></div>' +
+          '<div class="card"><h3 class="cyn">2 · Tách WHAT khỏi HOW</h3>' +
+          '<p style="font-size:15px;margin:.3em 0"><span class="chip">PRODUCT.md</span><span class="chip">ARCHITECTURE.md</span> là phần bền vững; ' +
+          '<span class="chip">plan.md</span> là trình tự; <span class="chip">user-stories.md</span> suy ra từ plan.</p></div>' +
+          '<div class="card"><h3 class="amb">3 · Phân loại điều chưa rõ</h3>' +
+          '<p style="font-size:15px;margin:.3em 0">Mỗi story gắn nhãn <span class="chip g">NOW</span><span class="chip a">COMPLEX</span><span class="chip m">DISCUSS</span> — ' +
+          "không đoán lén; con người quyết định mọi ngã rẽ.</p></div>" +
+          '<div class="card"><h3 class="mag">4 · Phạm vi là một DAG</h3>' +
+          '<p style="font-size:15px;margin:.3em 0">8 feature trong <span class="chip">feature_list.json</span> kèm phụ thuộc, ' +
+          "mỗi lúc đúng một feature <b>in-progress</b>, <b>evidence</b> = output thật.</p></div>" +
+          "</div>" +
+          '<p class="muted" style="margin-top:14px">Sáu ngã rẽ DISCUSS do con người tự quyết — AI liệt kê các lựa chọn &amp; đánh đổi; ' +
+          "con người là người ra quyết định.</p>",
+      );
+
+      /* ============================ SLIDE 7 — TECH STACK ============================ */
+      slide(
+        tab("slide-07", "tech-stack"),
+        '<div class="eyebrow">tech stack — cố định, ba tầng</div>' +
+          '<h2><span class="pmt">$</span> cat AGENTS.md | grep stack</h2>' +
+          '<div class="grid g3">' +
+          '<div class="card grn"><h3>backend/</h3>' +
+          '<p style="font-size:14.5px;margin:.3em 0"><b>Go + Fiber + GORM + MySQL 8</b></p>' +
+          '<ul style="font-size:14px"><li class="ok">Auth stateless, một bảng duy nhất</li>' +
+          '<li class="ok">Mọi query đều <span class="chip">WHERE shop = ?</span></li>' +
+          '<li class="ok">GORM AutoMigrate lúc khởi động</li></ul></div>' +
+          '<div class="card cyn"><h3>frontend/ (admin)</h3>' +
+          '<p style="font-size:14.5px;margin:.3em 0"><b>React 18 + Vite + TS</b></p>' +
+          '<ul style="font-size:14px"><li class="ok">Polaris + App Bridge</li>' +
+          '<li class="ok">Redux Toolkit + axios</li>' +
+          '<li class="ok">ApiClient → BaseRepo → Repo</li></ul></div>' +
+          '<div class="card mag"><h3>storefront/</h3>' +
+          '<p style="font-size:14.5px;margin:.3em 0"><b>Webpack + TypeScript</b></p>' +
+          '<ul style="font-size:14px"><li class="ok">Theme App Extension</li>' +
+          '<li class="ok">app-embed block</li>' +
+          '<li class="ok">Chèn thanh bar + JS đếm ngược</li></ul></div>' +
+          "</div>" +
+          '<p class="muted" style="margin-top:14px">Node 22 · Go 1.21+ · MySQL 8 qua docker-compose · ' +
+          'mỗi tầng một file <span class="chip">.env</span> (secret chỉ nằm ở backend).</p>',
+      );
+
+      /* ============================ SLIDE 8 — ARCHITECTURE ASCII ============================ */
+      slide(
+        tab("slide-08", "architecture"),
+        '<div class="eyebrow">kiến trúc — ba tầng, mỗi tầng một interface</div>' +
+          "<h2>Quản lý nhiều thanh; hiển thị đúng một thanh đang bật</h2>" +
+          '<div class="ascii">' +
+          '<span class="lbl">ADMIN (frontend/)</span>            <span class="lbl">BACKEND (backend/)</span>               <span class="lbl">STOREFRONT (storefront/)</span>\n' +
+          "React 18 + Vite + TS          Go + Fiber + GORM + MySQL          Webpack + TS bundle\n" +
+          "Polaris + App Bridge          /api/v1/announcement-bars/:shop   Theme App Extension\n" +
+          'Redux Toolkit + axios  <span class="ar">──────►</span>  GET·POST·PUT·DELETE  (CRUD)       app-embed block\n' +
+          'ApiClient→BaseRepo→    ký       GET /web/public/bar?shop=  <span class="ar">───────►</span>  <span class="ar">◄──</span> ApiClient→BaseRepo→\n' +
+          " AnnouncementBarRepo   HMAC +    (public, CORS *, MỘT thanh bật)     AnnouncementBarRepo\n" +
+          "                       Bearer   WHERE shop = ? + one-active inv.    window.Shopify.shop\n" +
+          "                                                                    countdown JS → inject DOM" +
+          "</div>" +
+          '<div class="kv" style="margin-top:14px">' +
+          '<span class="key">stateless</span><span>OAuth callback bỏ luôn access token; bảng duy nhất là <span class="chip">announcement_bars</span></span>' +
+          '<span class="key">chống IDOR</span><span>shop của admin suy ra từ <span class="chip">dest</span> trong session-token, không bao giờ từ path</span>' +
+          '<span class="key">public</span><span>đọc từ storefront không cần xác thực, CORS <span class="chip">*</span>, server kiểm tra hết hạn</span>' +
+          "</div>",
+      );
+
+      /* ============================ SLIDE 9 — DATA MODEL ============================ */
+      slide(
+        tab("slide-09", "data-model"),
+        '<div class="eyebrow">kiến trúc — bảng dữ liệu duy nhất</div>' +
+          '<h2><span class="pmt">$</span> DESCRIBE announcement_bars</h2>' +
+          '<div class="term"><pre>' +
+          '<span class="o">id</span>                  bigint PK         <span class="c"># tự tăng</span>\n' +
+          '<span class="o">shop</span>                varchar(255) MUL  <span class="c"># khóa tenant, KHÔNG unique (nhiều thanh/shop)</span>\n' +
+          '<span class="o">title</span>               varchar(120)      <span class="c"># nhãn cho admin (không lộ ra storefront)</span>\n' +
+          '<span class="o">enabled</span>             boolean           <span class="warn"># tối đa MỘT true mỗi shop (app tự đảm bảo)</span>\n' +
+          '<span class="o">message</span>             varchar(255)      <span class="c"># 1-200 ký tự khi bật</span>\n' +
+          '<span class="o">background_color</span>    varchar(9)        <span class="c"># hex #RRGGBB / #RRGGBBAA</span>\n' +
+          '<span class="o">text_color</span>          varchar(9)\n' +
+          '<span class="o">countdown_enabled</span>   boolean\n' +
+          '<span class="o">countdown_end_at</span>    datetime (UTC)    <span class="c"># mốc UTC tuyệt đối</span>\n' +
+          '<span class="o">countdown_bg/text</span>   varchar(9)\n' +
+          '<span class="o">countdown_format</span>    varchar(20)       <span class="c"># dd:hh:mm:ss | hh:mm:ss | with_labels</span>\n' +
+          '<span class="o">created_at/updated_at</span> datetime</pre></div>' +
+          '<p class="muted" style="margin-top:10px">Không có <span class="chip">sort_order</span> — các thanh không bao giờ xếp chồng. ' +
+          "Màu được validate bằng regex hex ở <b>cả</b> admin lẫn backend.</p>",
+      );
+
+      /* ============================ SLIDE 10 — FEATURE STATUS ============================ */
+      slide(
+        tab("slide-10", "feature-status"),
+        '<div class="eyebrow">danh sách feature — DAG, theo trạng thái</div>' +
+          "<h2>Phạm vi là một đồ thị phụ thuộc</h2>" +
+          '<div class="dag" style="margin:.4em 0 16px">' +
+          '<span class="node done">feat-001 khung+env</span><span class="arrow">→</span>' +
+          '<span class="node done">feat-002 model+OAuth</span><span class="arrow">→</span>' +
+          '<span class="node done">feat-003 admin CRUD</span><span class="arrow">→</span>' +
+          '<span class="node done">feat-004 endpoint public</span>' +
+          "</div>" +
+          '<div class="dag" style="margin-bottom:16px">' +
+          '<span class="node done">feat-005 admin UI</span><span class="arrow">→</span>' +
+          '<span class="node done">feat-006 storefront bundle</span><span class="arrow">→</span>' +
+          '<span class="node">feat-007 e2e + bộ kiểm</span>' +
+          '<span class="arrow">·</span><span class="node opt">feat-008 live preview (có thể cắt)</span>' +
+          "</div>" +
+          "<table>" +
+          "<tr><th>#</th><th>Feature</th><th>Rủi ro</th><th>Trạng thái</th></tr>" +
+          '<tr><td class="k">001</td><td class="m">Dựng khung repo &amp; môi trường demo</td><td class="m">trung bình</td><td class="grn">xong</td></tr>' +
+          '<tr><td class="k">002</td><td class="m">Mô hình dữ liệu + cài qua OAuth</td><td class="m">cao</td><td class="grn">xong</td></tr>' +
+          '<tr><td class="k">003</td><td class="m">Admin CRUD + một-thanh-bật + chống IDOR</td><td class="m">cao</td><td class="grn">xong</td></tr>' +
+          '<tr><td class="k">004</td><td class="m">Endpoint public cho storefront</td><td class="m">cao</td><td class="amb">chờ kiểm tay</td></tr>' +
+          '<tr><td class="k">005</td><td class="m">Form cấu hình admin UI</td><td class="m">trung bình</td><td class="amb">chờ kiểm tay</td></tr>' +
+          '<tr><td class="k">006</td><td class="m">Bundle storefront + extension</td><td class="m">trung bình</td><td class="amb">chờ kiểm tay</td></tr>' +
+          "</table>",
+      );
+
+      /* ============================ SLIDE 11 — IMPLEMENTATION LOOP ============================ */
+      slide(
+        tab("slide-11", "implementation"),
+        '<div class="eyebrow">cách hiện thực hoá từng task</div>' +
+          "<h2>TDD → Verification → Systematic Debugging</h2>" +
+          '<div class="grid g3">' +
+          '<div class="card grn"><h3>1 · TDD (Red → Green → Refactor)</h3>' +
+          '<ul style="font-size:14px">' +
+          '<li><b class="grn">RED</b> — viết test thất bại trước để chốt hành vi mong muốn</li>' +
+          '<li><b class="grn">GREEN</b> — viết code tối thiểu cho test pass</li>' +
+          '<li><b class="grn">REFACTOR</b> — dọn dẹp/gọn lại mà vẫn xanh</li>' +
+          '<li class="warn">không viết code khi chưa có test đỏ</li>' +
+          "</ul>" +
+          '<div class="term" style="margin-top:8px"><pre>' +
+          '<span class="p">$</span> go test <span class="err">→ FAIL (red)</span>\n' +
+          '<span class="p">$</span> go test <span class="ok">→ ok   (green)</span></pre></div></div>' +
+          '<div class="card cyn"><h3>2 · Verification</h3>' +
+          '<ul style="font-size:14px">' +
+          '<li>chạy bộ kiểm thử <b>THẬT</b>: <span class="chip">bash init.sh</span><span class="chip">go test ./...</span><span class="chip">vitest</span></li>' +
+          '<li>chỉ coi là <b>"done"</b> khi có bằng chứng PASS thật — không tin lời hứa</li>' +
+          '<li>tách <b>"người làm"</b> (viết code) khỏi <b>"người kiểm"</b> (<span class="chip">init.sh</span>)</li>' +
+          "</ul>" +
+          '<div class="term" style="margin-top:8px"><pre>' +
+          '<span class="p">$</span> bash init.sh\n' +
+          '<span class="ok">==== HARNESS GREEN ====</span></pre></div></div>' +
+          '<div class="card mag"><h3>3 · Systematic Debugging</h3>' +
+          '<ul style="font-size:14px">' +
+          "<li>có lỗi / test đỏ → tái hiện bằng một test</li>" +
+          "<li>đặt giả thuyết → kiểm chứng bằng bằng chứng (log/output)</li>" +
+          "<li>sửa đúng nguyên nhân → chạy lại tới khi xanh</li>" +
+          '<li class="warn">không sửa mò, không xoá test để qua</li>' +
+          "</ul></div>" +
+          "</div>" +
+          '<div class="why" style="margin-top:14px"><h3>Cũng chính là cách AI/Harness hỗ trợ</h3>' +
+          '<p style="margin:0">AI viết code dưới kỷ luật test-first + verify + debug có hệ thống — ' +
+          "đây cũng là cách AI agent được điều khiển ở mỗi feature, và là cách nó chứng minh giá trị.</p></div>",
+      );
+
+      /* ============================ SLIDE 12 — RESULTS ============================ */
+      slide(
+        tab("slide-12", "results"),
+        '<div class="eyebrow">kết quả — những gì đang chạy được</div>' +
+          "<h2>Một app 3 tầng chạy được, đã cài thật</h2>" +
+          '<div class="grid g2"><ul>' +
+          '<li class="ok">Cả ba tầng <b>build &amp; khởi động</b> từ một checkout sạch</li>' +
+          '<li class="ok"><b>Cài thật qua OAuth</b> trên dev store <span class="chip">sonnh-dev-store-3</span></li>' +
+          '<li class="ok"><b>Auth stateless</b> — cài với scope rỗng; access token bị bỏ đi</li>' +
+          '<li class="ok"><b>Mỗi shop một thanh bật</b> được đảm bảo bằng transaction</li>' +
+          "</ul><ul>" +
+          '<li class="ok"><b>Chống IDOR</b> qua <span class="chip">dest</span> trong session-token (403 khi lệch, 404 khi id của shop khác)</li>' +
+          '<li class="ok"><b>Endpoint public</b> trả về một thanh đang bật, server kiểm hết hạn, không lộ title</li>' +
+          '<li class="ok"><b>Thanh sticky trên storefront</b> + đồng hồ đếm ngược chạy thật</li>' +
+          '<li class="ok"><span class="chip g">bash init.sh</span> exit 0 — <b>HARNESS GREEN</b> (9 bước)</li>' +
+          "</ul></div>" +
+          '<div class="term" style="margin-top:8px"><pre>' +
+          '<span class="p">$</span> bash init.sh\n' +
+          '<span class="o">...  go test ./...  ok   ·   vite build  ok   ·   webpack  ok</span>\n' +
+          '<span class="ok">================ HARNESS GREEN ================</span><span class="cursor"></span></pre></div>',
+        'init.sh: <span class="ok">GREEN</span> · 9/9',
+      );
+
+      /* ============================ SLIDE 13 — DIFFICULTIES (process & knowledge) ============================ */
+      slide(
+        tab("slide-13", "difficulties-1"),
+        '<div class="eyebrow">khó khăn — về quy trình &amp; kiến thức</div>' +
+          '<h2 class="amb">Những khó khăn thực tế gặp phải</h2>' +
+          "<ul>" +
+          '<li class="warn"><b>Vẫn loay hoay khi set up harness.</b> Chưa quen cách dựng 5 file lõi và cách nối chúng lại ' +
+          'thành một bộ máy chạy được — biết tên từng file, nhưng để chúng "ăn khớp" thành một harness vận hành trơn tru thì còn vụng.</li>' +
+          '<li class="warn"><b>Khó kết hợp tất cả kiến thức đã học</b> thành một quy trình thống nhất — ' +
+          "planning, prompt/context engineering, guardrails/hooks, TDD/verification, MCP, subagents. " +
+          "Hiểu từng mảnh riêng lẻ, nhưng khi ghép lại thành một luồng làm việc liền mạch thì rất rối.</li>" +
+          '<li class="warn"><b>Lần đầu làm một Shopify app từ con số 0.</b> Chưa từng làm bao giờ, nên OAuth, App Bridge, ' +
+          "embedded admin, theme app extension đều xa lạ và khó dựng từ đầu — vừa học khái niệm vừa phải lắp cho nó chạy.</li>" +
+          "</ul>" +
+          '<div class="note" style="margin-top:14px"><h3>Còn một khó khăn về kỷ luật</h3>' +
+          '<p style="margin:0"><b>Làm quen với kỷ luật của harness</b>: "evidence trước khi done", luôn đúng một feature ' +
+          '<span class="chip">in-progress</span>, và tôn trọng DAG. Ban đầu mất kha khá thời gian để quen — ' +
+          "nhưng chính nó giữ cho tốc độ AI không biến thành hỗn loạn.</p></div>",
+      );
+
+      /* ============================ SLIDE 14 — DIFFICULTIES (technical) ============================ */
+      slide(
+        tab("slide-14", "difficulties-2"),
+        '<div class="eyebrow">khó khăn — kỹ thuật &amp; cách xử lý</div>' +
+          '<h2 class="amb">Những bug tích hợp mà unit test không bắt được</h2>' +
+          "<table>" +
+          "<tr><th>Vấn đề</th><th>Cách xử lý</th></tr>" +
+          '<tr><td class="m"><b class="amb">Windows Defender</b> khóa file <span class="chip">test.exe</span> khi chạy <span class="chip">go test</span></td>' +
+          '<td class="m">init.sh chỉ bỏ qua đúng artifact dọn dẹp có tên đó, dừng lại ngay khi có FAIL thật</td></tr>' +
+          '<tr><td class="m"><b class="amb">TLS bị chặn/soi</b> làm npm lỗi (<span class="chip">UNABLE_TO_VERIFY_LEAF_SIGNATURE</span>)</td>' +
+          '<td class="m">chạy với <span class="chip">strict-ssl=false</span> theo <b>từng lần</b>, không đưa vào repo</td></tr>' +
+          '<tr><td class="m"><b class="amb">OAuth redirect_uri không khớp</b> — <span class="chip">APP_URL</span> dư dấu <span class="chip">/</span> → URL thành <span class="chip">//auth/callback</span></td>' +
+          '<td class="m">chuẩn hóa URL callback; thêm vào whitelist của Partner app</td></tr>' +
+          '<tr><td class="m"><b class="amb">CORS preflight 405</b> ở endpoint storefront (custom header <span class="chip">ngrok-skip-browser-warning</span>)</td>' +
+          '<td class="m">gắn CORS làm path middleware trên <span class="chip">/web/public</span> để trả lời OPTIONS → 204</td></tr>' +
+          '<tr><td class="m"><b class="amb">App Bridge chưa load → admin API trả 401</b> (thiếu session token)</td>' +
+          '<td class="m">thêm <span class="chip">&lt;meta name="shopify-api-key"&gt;</span> + <span class="chip">app-bridge.js</span> vào index.html</td></tr>' +
+          '<tr><td class="m"><b class="amb">Phục vụ SPA admin từ backend</b> — App URL báo "Cannot GET /"</td>' +
+          '<td class="m">backend serve SPA đã build sau API/auth/health, kèm fallback route <span class="chip">/*</span></td></tr>' +
+          "</table>" +
+          '<p class="muted" style="margin-top:10px"><b>Cách xử lý chung:</b> dùng systematic-debugging (act → verify → feedback), ' +
+          'đọc tài liệu Shopify, hỏi AI, và để <span class="chip">init.sh</span> làm "người kiểm" tách khỏi "người làm".</p>',
+      );
+
+      /* ============================ SLIDE 15 — LESSONS ============================ */
+      slide(
+        tab("slide-15", "lessons"),
+        '<div class="eyebrow">bài học rút ra</div>' +
+          "<h2>Những điều mang sang dự án sau</h2>" +
+          '<div class="grid g2">' +
+          '<div class="why"><h3>Evidence trước khi done</h3>' +
+          '<p style="margin:0;font-size:15.5px">Một feature chỉ xong khi đã dán output kiểm chứng thật. ' +
+          '"Xong" là bằng chứng, không phải lời hứa — lần chạy trông hợp lý đầu tiên hóa ra sai.</p></div>' +
+          '<div class="why"><h3>Repo chính là spec</h3>' +
+          '<p style="margin:0;font-size:15.5px">Một prototype UI tĩnh làm nguồn chân lý giúp AI không xuất ra ' +
+          "HTML xấu, thiếu style. Thứ gì không nằm trong repo thì coi như không tồn tại.</p></div>" +
+          '<div class="note"><h3>Guardrail có thể fail open</h3>' +
+          '<p style="margin:0;font-size:15.5px">Trên Windows, hook chặn cho qua tất cả cho đến khi được kiểm thử thật. ' +
+          "Hãy test guardrail như bất kỳ đoạn code nào khác.</p></div>" +
+          '<div class="why"><h3>ROI của harness &amp; kiên nhẫn với stack mới</h3>' +
+          '<p style="margin:0;font-size:15.5px">Viết luật <b>một lần</b> trong repo — cộng với DAG, hook đã test và bàn giao trung thực — ' +
+          "sinh lời qua mọi phiên; và phải kiên nhẫn khi làm một tech stack mới (Shopify) từ con số 0.</p></div>" +
+          "</div>",
+      );
+
+      /* ============================ SLIDE 16 — DELIVERABLES ============================ */
+      slide(
+        tab("slide-16", "deliverables"),
+        '<div class="eyebrow">sản phẩm bàn giao &amp; liên kết</div>' +
+          '<h2><span class="pmt">$</span> ls deliverables/</h2>' +
+          '<div class="kv" style="font-size:16px;grid-template-columns:auto 1fr;gap:12px 18px">' +
+          '<span class="key">repo</span><span><a href="https://github.com/nhs21202/sonnh-AI-capstone-project" style="color:inherit">github.com/nhs21202/sonnh-AI-capstone-project</a></span>' +
+          '<span class="key">demo / dev-store</span><span>sonnh-dev-store-3.myshopify.com (cài thật qua OAuth)</span>' +
+          '<span class="key">slide deck</span><span>presentation/index.html (deck này — self-contained)</span>' +
+          '<span class="key">ghi chú AI/harness</span><span>present.md — bản ghi quy trình làm việc</span>' +
+          '<span class="key">file harness</span><span>AGENTS.md · CLAUDE.md · feature_list.json · progress.md · init.sh · session-handoff.md</span>' +
+          "</div>" +
+          '<div class="note" style="margin-top:18px"><h3>Kịch bản demo trực tiếp</h3>' +
+          '<p style="margin:0">Tạo hai thanh → bật một thanh → mở storefront → thấy nó + đồng hồ đang chạy → ' +
+          "bật thanh còn lại → reload (storefront đổi thanh) → đặt hạn gần → xem nó hết hạn và biến mất.</p></div>",
+      );
+
+      /* ============================ SLIDE 17 — CLOSING / Q&A ============================ */
+      slide(
+        tab("slide-17", "q-and-a"),
+        '<div class="body title-body" style="padding:0">' +
+          '<div class="eyebrow">kết thúc deck</div>' +
+          '<h2 style="font-size:46px">Cảm ơn — mời đặt câu hỏi</h2>' +
+          '<p class="lead" style="max-width:760px">Announcement Bar App: một Shopify app 3 tầng chạy được, xây dựng bằng một ' +
+          'AI harness kỷ luật — kế hoạch là một DAG, guardrails là code, và có bằng chứng trước khi "done".<span class="cursor"></span></p>' +
+          '<div class="term" style="margin-top:20px;max-width:560px"><pre>' +
+          '<span class="p">~/announcement-bar-app $</span> <span class="o">git log --oneline -1</span>\n' +
+          '<span class="o">a1002cd harness</span>\n' +
+          '<span class="p">~/announcement-bar-app $</span> <span class="ok">_</span><span class="cursor"></span></pre></div>' +
+          '<div class="author"><span class="badge">người trình bày: <b>sonnh</b></span>' +
+          '<span class="badge">Khóa học AI Coding — Đồ án cuối khóa</span></div>' +
+          "</div>",
+        'init.sh: <span class="ok">GREEN</span> · cảm ơn!',
+      );
+
+      /* ---------- render & engine ---------- */
+      const deck = document.getElementById("deck");
+      deck.innerHTML = slides.join("");
+      const slideEls = Array.from(deck.querySelectorAll(".slide"));
+      const N = slideEls.length;
+      let cur = 0;
+
+      const counter = document.getElementById("counter");
+      const progress = document.getElementById("progress");
+      const prevBtn = document.getElementById("prev");
+      const nextBtn = document.getElementById("next");
+
+      function show(i) {
+        cur = Math.max(0, Math.min(N - 1, i));
+        slideEls.forEach((s, k) => s.classList.toggle("active", k === cur));
+        counter.textContent = cur + 1 + " / " + N;
+        progress.style.width = ((cur + 1) / N) * 100 + "%";
+        prevBtn.disabled = cur === 0;
+        nextBtn.disabled = cur === N - 1;
+        const b = slideEls[cur] && slideEls[cur].querySelector(".body");
+        if (b) b.scrollTop = 0;
+        try {
+          location.hash = "s" + (cur + 1);
+        } catch (e) {}
+      }
+      function nextS() {
+        show(cur + 1);
+      }
+      function prevS() {
+        show(cur - 1);
+      }
+
+      prevBtn.addEventListener("click", prevS);
+      nextBtn.addEventListener("click", nextS);
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") {
+          e.preventDefault();
+          nextS();
+        } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+          e.preventDefault();
+          prevS();
+        } else if (e.key === "Home") {
+          e.preventDefault();
+          show(0);
+        } else if (e.key === "End") {
+          e.preventDefault();
+          show(N - 1);
+        }
+      });
+
+      /* deep-link via hash */
+      (function () {
+        const m = /^#s(\d+)$/.exec(location.hash);
+        show(m ? parseInt(m[1], 10) - 1 : 0);
+      })();
+    </script>
+  </body>
+</html>

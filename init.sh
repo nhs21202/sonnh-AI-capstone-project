@@ -93,7 +93,9 @@ fi
   # test binary when Defender briefly locks it ("unlinkat ... .test.exe ... being used
   # by another process") and exit non-zero EVEN THOUGH every test passed. We tolerate
   # ONLY that specific cleanup artifact; any real test FAIL still aborts the harness.
-  out="$(go test ./... 2>&1)"; rc=$?
+  # NOTE: capture via `if` so `set -e` doesn't abort on a non-zero go test BEFORE the tolerance
+  # check runs (a bare `out=$(go test)` assignment would trip set -e on the Defender flake).
+  if out="$(go test ./... 2>&1)"; then rc=0; else rc=$?; fi
   printf '%s\n' "$out"
   if [ "$rc" -ne 0 ]; then
     if printf '%s\n' "$out" | grep -qE '^(--- FAIL|FAIL)'; then
@@ -108,20 +110,21 @@ fi
 )
 
 # ---------------------------------------------------------------------------
-step "8/9 Frontend install"
+step "8/9 Frontend install + test + build"
 if [ ! -d frontend ]; then
   echo "Error: frontend/ does not exist yet - build the admin tier in feat-001." >&2
   exit 1
 fi
-( cd frontend && npm ci )
+# Vitest (jsdom) for logic + Redux + component/integration tests, then typecheck + Vite build.
+( cd frontend && npm ci && npm test && npm run build )
 
 # ---------------------------------------------------------------------------
-step "9/9 Storefront install"
+step "9/9 Storefront install + test + build"
 if [ ! -d storefront ]; then
   echo "Error: storefront/ does not exist yet - build the storefront tier in feat-001." >&2
   exit 1
 fi
-( cd storefront && npm ci )
+( cd storefront && npm ci && npm test && npm run build )
 
 # ---------------------------------------------------------------------------
 bold ""

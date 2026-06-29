@@ -1,8 +1,8 @@
-# questions.md — Open Questions for the Human (DISCUSS)
+# questions.md — DISCUSS Decisions (RESOLVED)
 
-DISCUSS items from the NOW/COMPLEX/DISCUSS classification. These need YOUR decision before they
-can be built (and before `feature_list.json` is written). Each gives context, options, and my
-recommendation.
+DISCUSS items from the NOW/COMPLEX/DISCUSS classification. **All are RESOLVED** — each took its
+recommended option (A) unless noted — and have been built; this file is kept as the decision record.
+Each gives context, options, the choice, and where it lives.
 
 ---
 
@@ -17,6 +17,8 @@ earlier instruction said `id · title · depends_on · acceptance check`.
 - (C) A hybrid you specify.
 **Why it matters:** this is the scope source-of-truth the build agent reads; the field names are
 load-bearing for the harness.
+**Resolved:** option (A) — followed the course schema (`id · name · description · dependencies ·
+status · evidence`, status enum) in `.claude/feature_list.json`.
 
 ## Q2 — Anti-IDOR: how to derive the authenticated shop in DEV
 **Context:** `VerifyShopifyApi()` no-ops when `STAGE_STATUS=dev`, so locally there's no verified
@@ -29,6 +31,8 @@ shop to compare against the `:shop` path param for the anti-IDOR check.
   anti-IDOR rule is untested until prod.
 - (C) Require a verified `shop` query param even in dev (partial HMAC check locally).
 **Why it matters:** decides whether S7's security is actually exercised during the demo.
+**Resolved:** option (A) — the backend decodes the session-token JWT `dest` claim in ALL modes and
+compares it to `:shop` (403 on mismatch). See `middleware/admin.go`.
 
 ## Q3 — Per-bar storage: flat columns vs JSON `settings` blob
 **Context:** each bar's editable settings can be stored as flat, typed columns or as a single JSON
@@ -53,6 +57,8 @@ the chosen deadline)?
   ticker logic, so low marginal cost.
 - (B) Static snapshot. Simpler; less impressive.
 **Why it matters:** affects effort in S10 and the demo polish.
+**Resolved:** option (A) — live-ticking preview sharing the storefront countdown helpers
+(`lib/countdown.ts`); implemented in the per-bar editor (feat-008).
 
 ## Q5 — Color input UI: hex field vs Polaris ColorPicker
 **Context:** a hex text input vs a graphical picker. Polaris 13 ships `ColorPicker`
@@ -74,6 +80,8 @@ storefront can reach the backend.
 - (B) Use a hosted backend/DB instead of local + tunnel. Fewer moving parts at demo time, more
   setup up front.
 **Why it matters:** drives the step-0 setup and how realistic the demo is within the deadline.
+**Resolved:** option (A) — a fresh dev store (`sonnh-dev-store-3`) + app + local MySQL
+(docker-compose) + ngrok tunnel, dedicated to this project.
 
 ## Q7 — Auth statefulness: store the access token, or stay stateless?
 **Context:** a Shopify app can persist the OAuth access token (to call the Admin API / register

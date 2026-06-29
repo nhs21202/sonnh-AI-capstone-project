@@ -95,10 +95,15 @@
         <section class="card">
           <div class="card-head"><h3>Countdown timer</h3></div>
           <div class="card-body">
-            <label class="check">
-              <input type="checkbox" id="cdToggle" checked onchange="document.getElementById('cdReveal').style.display = this.checked ? 'flex' : 'none'; document.getElementById('previewCountdown').style.display = this.checked ? 'inline-flex' : 'none';" />
-              Enable countdown
-            </label>
+            <div class="toggle-row">
+              <label class="switch">
+                <input type="checkbox" id="cdToggle" checked onchange="document.getElementById('cdReveal').style.display = this.checked ? 'flex' : 'none'; document.getElementById('previewCountdown').style.display = this.checked ? 'inline-flex' : 'none';" />
+                <span class="track"></span><span class="thumb"></span>
+              </label>
+              <div class="toggle-text">
+                <b>Enable countdown</b>
+              </div>
+            </div>
 
             <div class="reveal" id="cdReveal">
               <div class="field">

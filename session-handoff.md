@@ -27,24 +27,30 @@ Read order: `AGENTS.md` (source of truth) → `.claude/feature_list.json` → `p
 
 ## Most recent handoff
 
-- **Date:** 2026-06-28
-- **Active feature:** none — **feat-001 → feat-006 all DONE**. Next is feat-007.
-- **Done this session:** **feat-002 signed off (live install)**, plus built **feat-003/004/005/006**
-  test-first: backend admin CRUD + one-active invariant + anti-IDOR (`handlers/bars.go`, `validate`,
-  `middleware/admin.go`); public endpoint (`handlers/public.go`, single active/null, expiry gate, no
-  title leak, CORS *); admin UI (ApiClient+App Bridge token → repository → Redux slice → Polaris
-  list/editor + `date-fns-tz`); storefront (countdown math, fetch+render+ticker, Theme App Extension
-  app-embed block). `bash init.sh` GREEN (1–9); backend `go test` all pass; both JS tiers build + unit-test.
+- **Date:** 2026-06-29
+- **Active feature:** none in-progress. **ALL 8 features DONE (feat-001 → feat-008).** feat-004–008
+  were promoted from `manual-verification` to `done` on the user's hands-on sign-off (2026-06-29).
+- **Done this session (polish + deliverables):** storefront bar made **sticky** at the top; **message
+  now always required** + title ≤120 / message ≤200 length rules (TDD, both tiers, via new
+  `frontend/src/lib/barValidation.ts`); `*` required markers + character counters; checkboxes →
+  **toggles** (editor "Enabled" + "Enable countdown", and a per-row activate/deactivate toggle in the
+  list that keeps one-active); **Add** screen uses a "Create bar" page action (no save bar) while
+  **Edit** keeps the contextual save bar; new bars default `message = "Your message here!"`; removed
+  unused `formik`/`yup`; wrote `docs/demo-script.md`; built the Vietnamese slide deck
+  `presentation/index.html`.
 - **In progress:** none.
-- **Next:** **feat-007** — E2E demo script (create 2 bars → activate → storefront shows it → swap →
-  delete → near-deadline expiry) + full verify suite + capstone deliverables (repo/slides/workflow note).
-  feat-008 optional (live-ticking admin preview, cuttable).
-- **Blockers:** none. (feat-003/004 are high-risk: logic + security fully unit/integration-tested;
-  confirm live admin CRUD + storefront render at the demo.)
-- **Last verify status:** `bash init.sh` → **exit 0, HARNESS GREEN (1–9)**. Backend `go vet/build` 0;
-  `go test ./...` all pass (config; database **integration**: AutoMigrate + multi-bar-per-shop +
-  shop-scoping; handlers: health + **auth bad-HMAC → 401**; shopify: HMAC/authorize/session-token).
-  `announcement_bars` migrated (`shop` MUL non-unique). npm needs `npm_config_strict_ssl=false` here.
+- **Next:** all features done. Repo URL filled (slide 16 + `docs/demo-script.md` §3 ->
+  github.com/nhs21202/sonnh-AI-capstone-project). Remaining non-code deliverable: record the demo
+  video (`docs/demo-script.md` walkthrough) and submit. Capstone deadline: **14:00 Tue 2026-06-30**.
+- **Blockers:** none.
+- **Last verify status:** `bash init.sh` → **exit 0, HARNESS GREEN (1–9)**. Backend `go test ./...`
+  all pass (config; DB integration; handlers incl. auth bad-HMAC → 401; shopify; `validate` incl. the
+  new length + always-required-message rules).
+  Frontend: tsc 0, **67 vitest pass** (logic + slice + component tests), vite build 0.
+  Storefront: 5 vitest pass, webpack 0. npm needs `npm_config_strict_ssl=false` on this network.
+- **Running process:** a dev backend is up on `127.0.0.1:5005` (serves the built admin from
+  `frontend/dist`). Before recording the demo, restart it (`cd backend && go run .`) so it serves the
+  latest code, and replace the placeholder test-bar message with real demo copy.
 - **Clean state?:** yes — `node_modules`/`dist`/`.env` git-ignored; MySQL container left running
   (`make db.down` stops it).
 

@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import { barsRepo } from "../api/AnnouncementBarRepository";
 import type { Bar } from "../types";
 
@@ -15,7 +15,16 @@ const initialState: BarsState = { items: [], loading: false, error: null };
 const slice = createSlice({
   name: "bars",
   initialState,
-  reducers: {},
+  reducers: {
+    // Optimistic flip for the list toggle: update the UI instantly, then the server call + refetch
+    // reconcile. Enabling one bar drops the others to drafts here too (mirrors the one-active rule).
+    applyToggle(state, action: PayloadAction<{ id: number; enabled: boolean }>) {
+      const { id, enabled } = action.payload;
+      state.items = state.items.map((b) =>
+        b.id === id ? { ...b, enabled } : enabled ? { ...b, enabled: false } : b,
+      );
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchBars.pending, (s) => {
@@ -33,4 +42,5 @@ const slice = createSlice({
   },
 });
 
+export const { applyToggle } = slice.actions;
 export default slice.reducer;

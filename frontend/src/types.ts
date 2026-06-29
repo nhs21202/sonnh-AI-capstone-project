@@ -21,7 +21,7 @@ export type BarInput = Omit<Bar, "id" | "shop">;
 export const defaultBarInput = (): BarInput => ({
   title: "",
   enabled: false,
-  message: "",
+  message: "Your message here!",
   background_color: "#1A1A1A",
   text_color: "#FFFFFF",
   countdown_enabled: false,

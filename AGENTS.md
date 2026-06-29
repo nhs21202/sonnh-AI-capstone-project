@@ -14,7 +14,7 @@ Product detail: `docs/PRODUCT.md`. Architecture: `docs/ARCHITECTURE.md`.
 
 ## 2. Tech stack (FIXED — do not change)
 
-- **backend/** — Go + Fiber + GORM + MySQL. Layout: `internal/{config,database,handlers,models,shopify,middleware}`.
+- **backend/** — Go + Fiber + GORM + MySQL. Layout: `internal/{config,database,handlers,models,shopify,middleware,validate}`.
 - **frontend/** — React 18 + Vite + TypeScript, Polaris + App Bridge, Redux Toolkit. Form validation
   is native React state with inline Polaris `TextField` errors (not Formik/Yup); colors use Polaris `ColorPicker`.
 - **storefront/** — Webpack-bundled TypeScript, Shopify Theme App Extension (app-embed block).
@@ -52,12 +52,12 @@ Do not invent scope not in the feature list. Out-of-scope items are listed in `d
 
 ## 6. Verify commands (run from repo root)
 
-| Tier       | Command                                  | Checks                                    |
-|------------|------------------------------------------|-------------------------------------------|
-| Backend    | `go test ./...` (in `backend/`)          | handlers, shop-scoping, anti-IDOR, gates  |
-| Frontend   | `npm run test --workspace=frontend`      | admin form logic/validation               |
-| Storefront | `npm run test --workspace=storefront`    | countdown math, formats, expiry boundary  |
-| All (JS)   | `npm run check && npm run build`         | typecheck + builds                        |
+| Tier       | Command                                  | Checks                                                         |
+|------------|------------------------------------------|---------------------------------------------------------------|
+| Backend    | `go test ./...` (in `backend/`)          | handlers, shop-scoping, anti-IDOR, gates, validation          |
+| Frontend   | `npm test` (in `frontend/`)              | logic (validation/colors/countdown/list) + Redux + Vitest/RTL component & integration tests (jsdom) |
+| Storefront | `npm test` (in `storefront/`)            | countdown math, formats, expiry boundary                      |
+| All (JS)   | `npm run check && npm run build`         | typecheck + builds (per tier)                                 |
 
 ## 7. Definition of DONE (requires EVIDENCE)
 

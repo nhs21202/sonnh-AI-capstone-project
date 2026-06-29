@@ -35,7 +35,7 @@
           <h3>Saved bars</h3>
           <span class="badge neutral no-dot">3 bars</span>
           <div class="spacer"></div>
-          <span class="muted" style="font-size:12.5px;">1 active</span>
+          <span class="muted" style="font-size:12.5px;" id="activeCount">1 active</span>
         </div>
         <div class="table-wrap">
           <table class="data">
@@ -52,7 +52,12 @@
               <!-- THE single active bar -->
               <tr>
                 <td class="bar-title">Summer Flash Sale</td>
-                <td><span class="badge active">Active</span></td>
+                <td>
+                  <div class="status-cell" style="display:flex;align-items:center;gap:10px;">
+                    <label class="switch"><input type="checkbox" class="row-toggle" checked onchange="toggleBar(this)" /><span class="track"></span><span class="thumb"></span></label>
+                    <span class="badge active">Active</span>
+                  </div>
+                </td>
                 <td class="mono">Jul 5, 2026, 11:59 PM</td>
                 <td class="msg-preview">Summer sale — up to 50% off. Ends soon!</td>
                 <td class="actions">
@@ -63,7 +68,12 @@
               <!-- Drafts (not active) -->
               <tr>
                 <td class="bar-title">Free Shipping Banner</td>
-                <td><span class="badge draft">Draft</span></td>
+                <td>
+                  <div class="status-cell" style="display:flex;align-items:center;gap:10px;">
+                    <label class="switch"><input type="checkbox" class="row-toggle" onchange="toggleBar(this)" /><span class="track"></span><span class="thumb"></span></label>
+                    <span class="badge draft">Draft</span>
+                  </div>
+                </td>
                 <td class="mono muted">—</td>
                 <td class="msg-preview">Free shipping on all orders over $50.</td>
                 <td class="actions">
@@ -73,7 +83,12 @@
               </tr>
               <tr>
                 <td class="bar-title">Back-to-School Countdown</td>
-                <td><span class="badge draft">Draft</span></td>
+                <td>
+                  <div class="status-cell" style="display:flex;align-items:center;gap:10px;">
+                    <label class="switch"><input type="checkbox" class="row-toggle" onchange="toggleBar(this)" /><span class="track"></span><span class="thumb"></span></label>
+                    <span class="badge draft">Draft</span>
+                  </div>
+                </td>
                 <td class="mono">Sep 1, 2026, 9:00 AM</td>
                 <td class="msg-preview">Back-to-school deals land in:</td>
                 <td class="actions">
@@ -85,10 +100,33 @@
           </table>
         </div>
         <div class="card-foot" style="justify-content:flex-start;">
-          <span class="muted" style="font-size:12.5px;">Enabling any bar in the editor automatically turns the others into drafts, so exactly one stays active.</span>
+          <span class="muted" style="font-size:12.5px;">Enabling any bar — here in the list or in the editor — automatically turns the others into drafts, so exactly one stays active.</span>
         </div>
       </section>
     </main>
   </div>
+
+  <!-- Vanilla JS: list toggles enforce one-active — turning one on flips the others to drafts. -->
+  <script>
+    function toggleBar(input) {
+      if (input.checked) {
+        document.querySelectorAll('.row-toggle').forEach(function (t) { if (t !== input) t.checked = false; });
+      }
+      syncBadges();
+    }
+    function syncBadges() {
+      var active = 0;
+      document.querySelectorAll('tbody tr').forEach(function (tr) {
+        var t = tr.querySelector('.row-toggle');
+        var badge = tr.querySelector('.badge');
+        if (!t || !badge) return;
+        if (t.checked) { active++; badge.className = 'badge active'; badge.textContent = 'Active'; }
+        else { badge.className = 'badge draft'; badge.textContent = 'Draft'; }
+      });
+      var counter = document.getElementById('activeCount');
+      if (counter) counter.textContent = active + ' active';
+    }
+    syncBadges();
+  </script>
 </body>
 </html>
