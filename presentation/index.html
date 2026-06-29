@@ -851,7 +851,7 @@
           '<span class="o">shop</span>                varchar(255) MUL  <span class="c"># khóa tenant, KHÔNG unique (nhiều thanh/shop)</span>\n' +
           '<span class="o">title</span>               varchar(120)      <span class="c"># nhãn cho admin (không lộ ra storefront)</span>\n' +
           '<span class="o">enabled</span>             boolean           <span class="warn"># tối đa MỘT true mỗi shop (app tự đảm bảo)</span>\n' +
-          '<span class="o">message</span>             varchar(255)      <span class="c"># 1-200 ký tự khi bật</span>\n' +
+          '<span class="o">message</span>             varchar(255)      <span class="c"># luôn bắt buộc, 1-200 ký tự</span>\n' +
           '<span class="o">background_color</span>    varchar(9)        <span class="c"># hex #RRGGBB / #RRGGBBAA</span>\n' +
           '<span class="o">text_color</span>          varchar(9)\n' +
           '<span class="o">countdown_enabled</span>   boolean\n' +
@@ -877,17 +877,19 @@
           '<div class="dag" style="margin-bottom:16px">' +
           '<span class="node done">feat-005 admin UI</span><span class="arrow">→</span>' +
           '<span class="node done">feat-006 storefront bundle</span><span class="arrow">→</span>' +
-          '<span class="node">feat-007 e2e + bộ kiểm</span>' +
-          '<span class="arrow">·</span><span class="node opt">feat-008 live preview (có thể cắt)</span>' +
+          '<span class="node done">feat-007 e2e + bộ kiểm</span>' +
+          '<span class="arrow">·</span><span class="node done opt">feat-008 live preview (tùy chọn)</span>' +
           "</div>" +
           "<table>" +
           "<tr><th>#</th><th>Feature</th><th>Rủi ro</th><th>Trạng thái</th></tr>" +
           '<tr><td class="k">001</td><td class="m">Dựng khung repo &amp; môi trường demo</td><td class="m">trung bình</td><td class="grn">xong</td></tr>' +
           '<tr><td class="k">002</td><td class="m">Mô hình dữ liệu + cài qua OAuth</td><td class="m">cao</td><td class="grn">xong</td></tr>' +
           '<tr><td class="k">003</td><td class="m">Admin CRUD + một-thanh-bật + chống IDOR</td><td class="m">cao</td><td class="grn">xong</td></tr>' +
-          '<tr><td class="k">004</td><td class="m">Endpoint public cho storefront</td><td class="m">cao</td><td class="amb">chờ kiểm tay</td></tr>' +
-          '<tr><td class="k">005</td><td class="m">Form cấu hình admin UI</td><td class="m">trung bình</td><td class="amb">chờ kiểm tay</td></tr>' +
-          '<tr><td class="k">006</td><td class="m">Bundle storefront + extension</td><td class="m">trung bình</td><td class="amb">chờ kiểm tay</td></tr>' +
+          '<tr><td class="k">004</td><td class="m">Endpoint public cho storefront</td><td class="m">cao</td><td class="grn">xong</td></tr>' +
+          '<tr><td class="k">005</td><td class="m">Form cấu hình admin UI</td><td class="m">trung bình</td><td class="grn">xong</td></tr>' +
+          '<tr><td class="k">006</td><td class="m">Bundle storefront + extension</td><td class="m">trung bình</td><td class="grn">xong</td></tr>' +
+          '<tr><td class="k">007</td><td class="m">E2E demo + bộ kiểm thử</td><td class="m">trung bình</td><td class="grn">xong</td></tr>' +
+          '<tr><td class="k">008</td><td class="m">Live preview admin (tùy chọn)</td><td class="m">thấp</td><td class="grn">xong</td></tr>' +
           "</table>",
       );
 

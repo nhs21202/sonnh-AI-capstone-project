@@ -207,14 +207,29 @@ exists, and fixed a stale claim (a `docker-compose.yml` listed as done that wasn
 
 ---
 
-## 7. Honest limitations & what's next
+## 7. Where it stands now + honest limitations
 
-- **No application code yet.** Planning and the harness are complete; `feat-001` (the actual
-  scaffold + tiers) is the next step. `bash init.sh` is the target, not yet green — and the docs say
-  so rather than pretending otherwise.
-- **Demo readiness** depends on finishing the Environment subsystem (`init.sh`, `.env.example`,
-  `.nvmrc`, `docker-compose.yml`, root `package.json`) and then building features 001→007 along the
-  DAG, with the live-preview (008) as a cuttable bonus.
-- **The story is the deliverable too.** Even before the code, the *workflow* — disciplined
-  brainstorming, explicit decisions, scope-as-a-DAG, tested guardrails, honest handoffs — is the
-  thing the capstone is grading. This document is the evidence of that workflow.
+**Status: all 8 features done.** `bash init.sh` finishes **GREEN (9/9)**; the app **installs live via
+OAuth** on `sonnh-dev-store-3`; admin CRUD, the public endpoint, and the storefront bar all work on
+the dev store; backend `go test ./...` passes (incl. shop-isolation, anti-IDOR, one-active), and the
+frontend/storefront vitest suites are green. The live-preview (feat-008) was built and verified, not
+cut.
+
+Honest limitations (stated, not hidden):
+- **One-active is an app-layer invariant, not a DB constraint.** MySQL has no filtered-unique index
+  for "one enabled per shop", so it's enforced inside a transaction; a rare concurrent double-enable
+  race is theoretically possible. A test asserts the invariant.
+- **No pagination/search on the bars list** — deliberate YAGNI for a small, merchant-managed set;
+  deferred behind a documented decision rather than built speculatively.
+- **Stateless by design** — the app never calls the Admin API and discards the OAuth token, so it
+  can't read theme state (e.g. whether the app-embed is actually toggled on); the merchant is
+  guided to the theme editor instead.
+- **Demo runs on a dev store via an ngrok tunnel**, not a production deployment; frontend component
+  tests mock App Bridge + the network, with the live walkthrough covering the real browser path.
+
+**What I'd do next:** pagination + search on the list, an automated end-to-end (real-browser) test,
+an "enable the app embed" guidance banner, and a production deployment.
+
+- **The story is the deliverable too.** Beyond the code, the *workflow* — disciplined brainstorming,
+  explicit decisions, scope-as-a-DAG, tested guardrails, evidence-before-done, honest handoffs — is
+  what the capstone is grading. This document is the evidence of that workflow.
