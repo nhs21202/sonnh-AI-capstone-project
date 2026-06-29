@@ -26,6 +26,7 @@ vi.mock("@shopify/app-bridge-react", () => ({
 }));
 
 import { BarEditor } from "./BarEditor";
+import { storeLocalToUTC } from "../lib/time";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -103,7 +104,11 @@ describe("BarEditor — valid submit", () => {
     fireEvent.change(screen.getByLabelText(/countdown deadline/i), { target: { value: "2030-01-01T00:00" } });
     await user.click(screen.getByRole("button", { name: /create bar/i }));
     await waitFor(() => expect(createMock).toHaveBeenCalledTimes(1));
-    expect(createMock.mock.calls[0][0].countdown_end_at).toBe("2030-01-01T00:00:00.000Z");
+    // The deadline is wall-clock time in the merchant's (browser) timezone, converted to absolute
+    // UTC. Asserting against the same conversion makes this robust on any machine timezone — and
+    // would have caught the prior bug where the editor hardcoded "UTC" (no offset applied).
+    const browserTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    expect(createMock.mock.calls[0][0].countdown_end_at).toBe(storeLocalToUTC("2030-01-01T00:00", browserTZ));
   });
 
   it("Edit: saving updates the bar with its id and toasts", async () => {

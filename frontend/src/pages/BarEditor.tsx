@@ -22,7 +22,9 @@ import { hexToHsba, hsbaToHex } from "../lib/color";
 import { computeErrors, hexRe, MAX_TITLE, MAX_MESSAGE, type Errors } from "../lib/barValidation";
 import { Toggle } from "../components/Toggle";
 
-const TZ = "UTC";
+// The merchant's deadline is wall-clock time in their own timezone, so convert via the browser's
+// timezone (not a hardcoded "UTC", which skewed the stored UTC by the local offset, e.g. +7 in ICT).
+const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 const SAVE_BAR_ID = "bar-editor-save-bar";
 
 // Minimal shape of the App Bridge save-bar API (provided by window.shopify in the embedded admin).

@@ -694,20 +694,18 @@
       /* ============================ SLIDE 2 — AGENDA ============================ */
       slide(
         tab("slide-02", "agenda"),
-        '<div class="eyebrow">những nội dung sẽ trình bày</div>' +
+        '<div class="eyebrow">những nội dung sẽ trình bày — theo 6 câu hỏi</div>' +
           '<h2><span class="pmt">$</span> cat agenda.md</h2>' +
           '<div class="grid g2">' +
           "<ul>" +
-          '<li class="ok"><b>Mục tiêu</b> — app làm được gì</li>' +
-          '<li class="ok"><b>Phương pháp luận</b> &amp; bộ harness 5 file lõi</li>' +
-          '<li class="ok"><b>Từ ý tưởng đến kế hoạch</b> — brainstorm → DAG</li>' +
-          '<li class="ok"><b>Tech stack · kiến trúc · mô hình dữ liệu</b></li>' +
+          '<li class="ok"><b>1 · Mục tiêu</b> — app làm được gì</li>' +
+          '<li class="ok"><b>2 · Kiến thức áp dụng</b> — harness 5 file lõi · brainstorm→DAG · tech stack</li>' +
+          '<li class="ok"><b>3 · AI/Harness hỗ trợ</b> — TDD → verify → debug</li>' +
           "</ul>" +
           "<ul>" +
-          '<li class="ok"><b>Cách hiện thực hoá từng task</b> — TDD → verify → debug</li>' +
-          '<li class="ok"><b>Kết quả</b> — app 3 tầng chạy được, cài thật</li>' +
-          '<li class="ok"><b>Khó khăn</b> &amp; cách xử lý · <b>Bài học rút ra</b></li>' +
-          '<li class="ok"><b>Sản phẩm bàn giao</b> &amp; Hỏi-đáp</li>' +
+          '<li class="ok"><b>4 · Kết quả</b> &amp; sản phẩm bàn giao</li>' +
+          '<li class="ok"><b>5 · Khó khăn</b> &amp; cách xử lý</li>' +
+          '<li class="ok"><b>6 · Bài học rút ra</b> · Hỏi-đáp</li>' +
           "</ul>" +
           "</div>",
       );
@@ -738,113 +736,54 @@
 
       /* ============================ SLIDE 4 — THESIS ============================ */
       slide(
-        tab("slide-04", "thesis"),
-        '<div class="eyebrow">kiến thức khóa học — phương pháp luận</div>' +
-          "<h2>Coi AI như một junior giỏi nhưng hiểu đúng nghĩa đen</h2>" +
-          '<p class="lead">Đừng "prompt rồi cầu may". Hãy bọc một <span class="grn">harness</span> quanh AI: luật lệ rõ ràng, ' +
-          'phạm vi đã hoạch định, guardrails tự động, và thói quen "có bằng chứng mới được coi là xong" — để tốc độ của AI không biến thành cẩu thả.</p>' +
-          '<div class="term" style="margin-top:18px"><pre>' +
-          '<span class="c"># AI nhanh nhưng *hiểu đúng nghĩa đen*. Harness cung cấp phần</span>\n' +
-          '<span class="c"># phán đoán mà nếu không thì con người phải lặp lại trong mọi prompt:</span>\n\n' +
-          '<span class="p">$</span> <span class="o">phạm vi</span>     <span class="c">→ một đồ thị phụ thuộc đã hoạch định, không phải cảm tính</span>\n' +
-          '<span class="p">$</span> <span class="o">luật lệ</span>     <span class="c">→ viết một lần, nằm trong repo</span>\n' +
-          '<span class="p">$</span> <span class="o">kiểm chứng</span>  <span class="c">→ bằng chứng, không bao giờ là lời hứa</span>\n' +
-          '<span class="p">$</span> <span class="o">liên tục</span>    <span class="c">→ bàn giao trung thực giữa các phiên</span><span class="cursor"></span></pre></div>',
-      );
-
-      /* ============================ SLIDE 5 — 5 SUBSYSTEMS ============================ */
-      slide(
-        tab("slide-05", "harness"),
-        '<div class="eyebrow">kiến thức khóa học — harness 5 phân hệ</div>' +
-          "<h2>Năm file lõi, năm nhiệm vụ</h2>" +
+        tab("slide-04", "phương-pháp"),
+        '<div class="eyebrow">[2] kiến thức áp dụng — phương pháp luận + harness</div>' +
+          "<h2>Coi AI như junior giỏi → bọc một harness quanh nó</h2>" +
+          '<p class="lead" style="margin-bottom:10px">Đừng "prompt rồi cầu may". Bọc một <span class="grn">harness</span>: luật rõ, phạm vi đã hoạch định, ' +
+          'guardrails tự động, "có bằng chứng mới coi là xong" — để tốc độ AI không biến thành cẩu thả.</p>' +
           "<table>" +
-          "<tr><th>Phân hệ</th><th>Trả lời câu hỏi gì</th><th>Nằm ở đâu</th></tr>" +
-          '<tr><td class="k">Guidance (định hướng)</td><td>Luật lệ / nguồn chân lý là gì?</td><td class="m">AGENTS.md · CLAUDE.md</td></tr>' +
-          '<tr><td class="k">Tools (công cụ)</td><td>AI được phép chạy gì?</td><td class="m">.claude/settings.json (permissions)</td></tr>' +
-          '<tr><td class="k">Environment (môi trường)</td><td>Làm sao tái lập được?</td><td class="m">docker-compose · .env.example · init.sh</td></tr>' +
-          '<tr><td class="k">State (trạng thái)</td><td>Phạm vi, nhật ký &amp; bàn giao?</td><td class="m">feature_list.json · progress.md · session-handoff.md</td></tr>' +
-          '<tr><td class="k">Feedback (phản hồi)</td><td>Làm sao biết nó chạy đúng?</td><td class="m">bộ kiểm init.sh + hooks/guardrails</td></tr>' +
+          "<tr><th>Phân hệ (5 file lõi)</th><th>Trả lời câu hỏi gì</th><th>Nằm ở đâu</th></tr>" +
+          '<tr><td class="k">Guidance</td><td>Luật / nguồn chân lý?</td><td class="m">AGENTS.md · CLAUDE.md</td></tr>' +
+          '<tr><td class="k">Tools</td><td>AI được phép chạy gì?</td><td class="m">.claude/settings.json</td></tr>' +
+          '<tr><td class="k">Environment</td><td>Tái lập thế nào?</td><td class="m">docker-compose · .env.example · init.sh</td></tr>' +
+          '<tr><td class="k">State</td><td>Phạm vi, nhật ký, bàn giao?</td><td class="m">feature_list.json · progress.md · session-handoff.md</td></tr>' +
+          '<tr><td class="k">Feedback</td><td>Biết nó chạy đúng?</td><td class="m">init.sh + hooks/guardrails</td></tr>' +
           "</table>" +
-          '<div class="why" style="margin-top:16px"><h3>AGENTS.md = nguồn chân lý (system of record)</h3>' +
-          '<p style="margin:0">CLAUDE.md chỉ là một stub riêng cho Claude, trỏ về AGENTS.md — bản hợp đồng dùng chung cho mọi model. ' +
-          "Repo <b>chính là</b> spec: bất cứ thứ gì không được viết ra ở đó đều coi như không tồn tại.</p></div>",
+          '<p class="muted" style="margin-top:12px"><b>AGENTS.md = nguồn chân lý</b>; CLAUDE.md chỉ trỏ về nó. ' +
+          "Repo <b>chính là</b> spec — thứ gì không viết ra coi như không tồn tại.</p>",
       );
 
-      /* ============================ SLIDE 6 — IDEA TO PLAN ============================ */
+      /* ============================ SLIDE 5 — PLAN + TECH STACK (gộp planning + stack) ============================ */
       slide(
-        tab("slide-06", "planning"),
-        '<div class="eyebrow">kiến thức khóa học — từ ý tưởng đến kế hoạch</div>' +
-          "<h2>Brainstorm → docs → user stories → DAG</h2>" +
-          '<div class="grid g2">' +
-          '<div class="card"><h3 class="grn">1 · Brainstorm (chưa code)</h3>' +
-          '<p style="font-size:15px;margin:.3em 0">Hỏi từng câu một; ép AI <b>phản biện</b> lại việc phình phạm vi. ' +
-          'Phần thưởng là <b>danh sách "ngoài phạm vi"</b>.</p></div>' +
-          '<div class="card"><h3 class="cyn">2 · Tách WHAT khỏi HOW</h3>' +
-          '<p style="font-size:15px;margin:.3em 0"><span class="chip">PRODUCT.md</span><span class="chip">ARCHITECTURE.md</span> là phần bền vững; ' +
-          '<span class="chip">plan.md</span> là trình tự; <span class="chip">user-stories.md</span> suy ra từ plan.</p></div>' +
-          '<div class="card"><h3 class="amb">3 · Phân loại điều chưa rõ</h3>' +
-          '<p style="font-size:15px;margin:.3em 0">Mỗi story gắn nhãn <span class="chip g">NOW</span><span class="chip a">COMPLEX</span><span class="chip m">DISCUSS</span> — ' +
-          "không đoán lén; con người quyết định mọi ngã rẽ.</p></div>" +
-          '<div class="card"><h3 class="mag">4 · Phạm vi là một DAG</h3>' +
-          '<p style="font-size:15px;margin:.3em 0">8 feature trong <span class="chip">feature_list.json</span> kèm phụ thuộc, ' +
-          "mỗi lúc đúng một feature <b>in-progress</b>, <b>evidence</b> = output thật.</p></div>" +
-          "</div>" +
-          '<p class="muted" style="margin-top:14px">Sáu ngã rẽ DISCUSS do con người tự quyết — AI liệt kê các lựa chọn &amp; đánh đổi; ' +
-          "con người là người ra quyết định.</p>",
-      );
-
-      /* ============================ SLIDE 7 — TECH STACK ============================ */
-      slide(
-        tab("slide-07", "tech-stack"),
-        '<div class="eyebrow">tech stack — cố định, ba tầng</div>' +
-          '<h2><span class="pmt">$</span> cat AGENTS.md | grep stack</h2>' +
+        tab("slide-05", "kế-hoạch"),
+        '<div class="eyebrow">[2] kiến thức áp dụng — kế hoạch &amp; công nghệ</div>' +
+          "<h2>Brainstorm → docs → DAG, rồi mới code</h2>" +
+          '<div class="term" style="margin:.2em 0 14px"><pre>' +
+          '<span class="p">$</span> <span class="o">brainstorm</span>  <span class="c"># hỏi từng câu, ép AI phản biện phình phạm vi → có "danh sách ngoài phạm vi"</span>\n' +
+          '<span class="p">$</span> <span class="o">docs</span>        <span class="c"># PRODUCT / ARCHITECTURE (bền vững) · plan · user-stories</span>\n' +
+          '<span class="p">$</span> <span class="o">phân loại</span>   <span class="c"># NOW / COMPLEX / DISCUSS — con người quyết mọi ngã rẽ</span>\n' +
+          '<span class="p">$</span> <span class="o">DAG</span>         <span class="c"># 8 feature trong feature_list.json, mỗi lúc đúng 1 in-progress, evidence = output thật</span></pre></div>' +
           '<div class="grid g3">' +
           '<div class="card grn"><h3>backend/</h3>' +
-          '<p style="font-size:14.5px;margin:.3em 0"><b>Go + Fiber + GORM + MySQL 8</b></p>' +
-          '<ul style="font-size:14px"><li class="ok">Auth stateless, một bảng duy nhất</li>' +
-          '<li class="ok">Mọi query đều <span class="chip">WHERE shop = ?</span></li>' +
-          '<li class="ok">GORM AutoMigrate lúc khởi động</li></ul></div>' +
+          '<p style="font-size:14px;margin:.3em 0"><b>Go · Fiber · GORM · MySQL 8</b></p>' +
+          '<ul style="font-size:13.5px"><li class="ok">Auth stateless, một bảng</li>' +
+          '<li class="ok">Mọi query <span class="chip">WHERE shop = ?</span></li></ul></div>' +
           '<div class="card cyn"><h3>frontend/ (admin)</h3>' +
-          '<p style="font-size:14.5px;margin:.3em 0"><b>React 18 + Vite + TS</b></p>' +
-          '<ul style="font-size:14px"><li class="ok">Polaris + App Bridge</li>' +
-          '<li class="ok">Redux Toolkit + axios</li>' +
-          '<li class="ok">ApiClient → BaseRepo → Repo</li></ul></div>' +
+          '<p style="font-size:14px;margin:.3em 0"><b>React 18 · Vite · TS</b></p>' +
+          '<ul style="font-size:13.5px"><li class="ok">Polaris + App Bridge</li>' +
+          '<li class="ok">Redux Toolkit + axios</li></ul></div>' +
           '<div class="card mag"><h3>storefront/</h3>' +
-          '<p style="font-size:14.5px;margin:.3em 0"><b>Webpack + TypeScript</b></p>' +
-          '<ul style="font-size:14px"><li class="ok">Theme App Extension</li>' +
-          '<li class="ok">app-embed block</li>' +
-          '<li class="ok">Chèn thanh bar + JS đếm ngược</li></ul></div>' +
+          '<p style="font-size:14px;margin:.3em 0"><b>Webpack · TS</b></p>' +
+          '<ul style="font-size:13.5px"><li class="ok">Theme App Extension</li>' +
+          '<li class="ok">app-embed + JS đếm ngược</li></ul></div>' +
           "</div>" +
-          '<p class="muted" style="margin-top:14px">Node 22 · Go 1.21+ · MySQL 8 qua docker-compose · ' +
-          'mỗi tầng một file <span class="chip">.env</span> (secret chỉ nằm ở backend).</p>',
-      );
-
-      /* ============================ SLIDE 8 — ARCHITECTURE ASCII ============================ */
-      slide(
-        tab("slide-08", "architecture"),
-        '<div class="eyebrow">kiến trúc — ba tầng, mỗi tầng một interface</div>' +
-          "<h2>Quản lý nhiều thanh; hiển thị đúng một thanh đang bật</h2>" +
-          '<div class="ascii">' +
-          '<span class="lbl">ADMIN (frontend/)</span>            <span class="lbl">BACKEND (backend/)</span>               <span class="lbl">STOREFRONT (storefront/)</span>\n' +
-          "React 18 + Vite + TS          Go + Fiber + GORM + MySQL          Webpack + TS bundle\n" +
-          "Polaris + App Bridge          /api/v1/announcement-bars/:shop   Theme App Extension\n" +
-          'Redux Toolkit + axios  <span class="ar">──────►</span>  GET·POST·PUT·DELETE  (CRUD)       app-embed block\n' +
-          'ApiClient→BaseRepo→    ký       GET /web/public/bar?shop=  <span class="ar">───────►</span>  <span class="ar">◄──</span> ApiClient→BaseRepo→\n' +
-          " AnnouncementBarRepo   HMAC +    (public, CORS *, MỘT thanh bật)     AnnouncementBarRepo\n" +
-          "                       Bearer   WHERE shop = ? + one-active inv.    window.Shopify.shop\n" +
-          "                                                                    countdown JS → inject DOM" +
-          "</div>" +
-          '<div class="kv" style="margin-top:14px">' +
-          '<span class="key">stateless</span><span>OAuth callback bỏ luôn access token; bảng duy nhất là <span class="chip">announcement_bars</span></span>' +
-          '<span class="key">chống IDOR</span><span>shop của admin suy ra từ <span class="chip">dest</span> trong session-token, không bao giờ từ path</span>' +
-          '<span class="key">public</span><span>đọc từ storefront không cần xác thực, CORS <span class="chip">*</span>, server kiểm tra hết hạn</span>' +
-          "</div>",
+          '<p class="muted" style="margin-top:10px">Node 22 · Go 1.23 · MySQL 8 qua docker-compose · mỗi tầng một <span class="chip">.env</span> (secret chỉ ở backend).</p>',
       );
 
       /* ============================ SLIDE 9 — DATA MODEL ============================ */
       slide(
-        tab("slide-09", "data-model"),
-        '<div class="eyebrow">kiến trúc — bảng dữ liệu duy nhất</div>' +
+        tab("slide-06", "data-model"),
+        '<div class="eyebrow">[2] kiến trúc — bảng dữ liệu duy nhất</div>' +
           '<h2><span class="pmt">$</span> DESCRIBE announcement_bars</h2>' +
           '<div class="term"><pre>' +
           '<span class="o">id</span>                  bigint PK         <span class="c"># tự tăng</span>\n' +
@@ -863,40 +802,12 @@
           "Màu được validate bằng regex hex ở <b>cả</b> admin lẫn backend.</p>",
       );
 
-      /* ============================ SLIDE 10 — FEATURE STATUS ============================ */
-      slide(
-        tab("slide-10", "feature-status"),
-        '<div class="eyebrow">danh sách feature — DAG, theo trạng thái</div>' +
-          "<h2>Phạm vi là một đồ thị phụ thuộc</h2>" +
-          '<div class="dag" style="margin:.4em 0 16px">' +
-          '<span class="node done">feat-001 khung+env</span><span class="arrow">→</span>' +
-          '<span class="node done">feat-002 model+OAuth</span><span class="arrow">→</span>' +
-          '<span class="node done">feat-003 admin CRUD</span><span class="arrow">→</span>' +
-          '<span class="node done">feat-004 endpoint public</span>' +
-          "</div>" +
-          '<div class="dag" style="margin-bottom:16px">' +
-          '<span class="node done">feat-005 admin UI</span><span class="arrow">→</span>' +
-          '<span class="node done">feat-006 storefront bundle</span><span class="arrow">→</span>' +
-          '<span class="node done">feat-007 e2e + bộ kiểm</span>' +
-          '<span class="arrow">·</span><span class="node done opt">feat-008 live preview (tùy chọn)</span>' +
-          "</div>" +
-          "<table>" +
-          "<tr><th>#</th><th>Feature</th><th>Rủi ro</th><th>Trạng thái</th></tr>" +
-          '<tr><td class="k">001</td><td class="m">Dựng khung repo &amp; môi trường demo</td><td class="m">trung bình</td><td class="grn">xong</td></tr>' +
-          '<tr><td class="k">002</td><td class="m">Mô hình dữ liệu + cài qua OAuth</td><td class="m">cao</td><td class="grn">xong</td></tr>' +
-          '<tr><td class="k">003</td><td class="m">Admin CRUD + một-thanh-bật + chống IDOR</td><td class="m">cao</td><td class="grn">xong</td></tr>' +
-          '<tr><td class="k">004</td><td class="m">Endpoint public cho storefront</td><td class="m">cao</td><td class="grn">xong</td></tr>' +
-          '<tr><td class="k">005</td><td class="m">Form cấu hình admin UI</td><td class="m">trung bình</td><td class="grn">xong</td></tr>' +
-          '<tr><td class="k">006</td><td class="m">Bundle storefront + extension</td><td class="m">trung bình</td><td class="grn">xong</td></tr>' +
-          '<tr><td class="k">007</td><td class="m">E2E demo + bộ kiểm thử</td><td class="m">trung bình</td><td class="grn">xong</td></tr>' +
-          '<tr><td class="k">008</td><td class="m">Live preview admin (tùy chọn)</td><td class="m">thấp</td><td class="grn">xong</td></tr>' +
-          "</table>",
-      );
+      /* SLIDE 10 (feature status) đã bỏ — tóm tắt "8/8 feature xong" gộp vào slide Kết quả. */
 
-      /* ============================ SLIDE 11 — IMPLEMENTATION LOOP ============================ */
+      /* ============================ SLIDE 07 — IMPLEMENTATION LOOP / AI HỖ TRỢ ============================ */
       slide(
-        tab("slide-11", "implementation"),
-        '<div class="eyebrow">cách hiện thực hoá từng task</div>' +
+        tab("slide-07", "AI-hỗ-trợ"),
+        '<div class="eyebrow">[3] AI/Harness hỗ trợ — cách hiện thực hoá từng task</div>' +
           "<h2>TDD → Verification → Systematic Debugging</h2>" +
           '<div class="grid g3">' +
           '<div class="card grn"><h3>1 · TDD (Red → Green → Refactor)</h3>' +
@@ -931,22 +842,25 @@
           "đây cũng là cách AI agent được điều khiển ở mỗi feature, và là cách nó chứng minh giá trị.</p></div>",
       );
 
-      /* ============================ SLIDE 12 — RESULTS ============================ */
+      /* ============================ SLIDE 08 — KẾT QUẢ & BÀN GIAO (gộp results + deliverables) ============================ */
       slide(
-        tab("slide-12", "results"),
-        '<div class="eyebrow">kết quả — những gì đang chạy được</div>' +
+        tab("slide-08", "kết-quả"),
+        '<div class="eyebrow">[4] kết quả &amp; sản phẩm bàn giao</div>' +
           "<h2>Một app 3 tầng chạy được, đã cài thật</h2>" +
           '<div class="grid g2"><ul>' +
-          '<li class="ok">Cả ba tầng <b>build &amp; khởi động</b> từ một checkout sạch</li>' +
+          '<li class="ok"><b>8/8 feature xong</b>; cả ba tầng build &amp; khởi động từ checkout sạch</li>' +
           '<li class="ok"><b>Cài thật qua OAuth</b> trên dev store <span class="chip">sonnh-dev-store-3</span></li>' +
-          '<li class="ok"><b>Auth stateless</b> — cài với scope rỗng; access token bị bỏ đi</li>' +
-          '<li class="ok"><b>Mỗi shop một thanh bật</b> được đảm bảo bằng transaction</li>' +
-          "</ul><ul>" +
-          '<li class="ok"><b>Chống IDOR</b> qua <span class="chip">dest</span> trong session-token (403 khi lệch, 404 khi id của shop khác)</li>' +
-          '<li class="ok"><b>Endpoint public</b> trả về một thanh đang bật, server kiểm hết hạn, không lộ title</li>' +
-          '<li class="ok"><b>Thanh sticky trên storefront</b> + đồng hồ đếm ngược chạy thật</li>' +
-          '<li class="ok"><span class="chip g">bash init.sh</span> exit 0 — <b>HARNESS GREEN</b> (9 bước)</li>' +
-          "</ul></div>" +
+          '<li class="ok"><b>Auth stateless</b> — access token bị bỏ; <b>mỗi shop một thanh bật</b> (transaction)</li>' +
+          '<li class="ok"><b>Thanh sticky + đồng hồ đếm ngược</b> chạy thật, tự ẩn khi hết hạn</li>' +
+          '<li class="ok"><span class="chip g">bash init.sh</span> exit 0 — <b>HARNESS GREEN (9/9)</b></li>' +
+          "</ul>" +
+          '<div class="kv" style="font-size:14px;grid-template-columns:auto 1fr;gap:9px 14px;align-content:start">' +
+          '<span class="key">repo</span><span><a href="https://github.com/nhs21202/sonnh-AI-capstone-project" style="color:inherit">github.com/nhs21202/sonnh-AI-capstone-project</a></span>' +
+          '<span class="key">demo</span><span>sonnh-dev-store-3.myshopify.com (OAuth)</span>' +
+          '<span class="key">slide</span><span>presentation/index.html (deck này)</span>' +
+          '<span class="key">ghi chú AI</span><span>present.md — bản ghi quy trình</span>' +
+          '<span class="key">harness</span><span>AGENTS.md · feature_list.json · progress.md · init.sh · session-handoff.md</span>' +
+          "</div></div>" +
           '<div class="term" style="margin-top:8px"><pre>' +
           '<span class="p">$</span> bash init.sh\n' +
           '<span class="o">...  go test ./...  ok   ·   vite build  ok   ·   webpack  ok</span>\n' +
@@ -954,54 +868,29 @@
         'init.sh: <span class="ok">GREEN</span> · 9/9',
       );
 
-      /* ============================ SLIDE 13 — DIFFICULTIES (process & knowledge) ============================ */
+      /* ============================ SLIDE 09 — KHÓ KHĂN & CÁCH XỬ LÝ (quy trình & làm quen) ============================ */
       slide(
-        tab("slide-13", "difficulties-1"),
-        '<div class="eyebrow">khó khăn — về quy trình &amp; kiến thức</div>' +
-          '<h2 class="amb">Những khó khăn thực tế gặp phải</h2>' +
-          "<ul>" +
-          '<li class="warn"><b>Vẫn loay hoay khi set up harness.</b> Chưa quen cách dựng 5 file lõi và cách nối chúng lại ' +
-          'thành một bộ máy chạy được — biết tên từng file, nhưng để chúng "ăn khớp" thành một harness vận hành trơn tru thì còn vụng.</li>' +
-          '<li class="warn"><b>Khó kết hợp tất cả kiến thức đã học</b> thành một quy trình thống nhất — ' +
-          "planning, prompt/context engineering, guardrails/hooks, TDD/verification, MCP, subagents. " +
-          "Hiểu từng mảnh riêng lẻ, nhưng khi ghép lại thành một luồng làm việc liền mạch thì rất rối.</li>" +
-          '<li class="warn"><b>Lần đầu làm một Shopify app từ con số 0.</b> Chưa từng làm bao giờ, nên OAuth, App Bridge, ' +
-          "embedded admin, theme app extension đều xa lạ và khó dựng từ đầu — vừa học khái niệm vừa phải lắp cho nó chạy.</li>" +
-          "</ul>" +
-          '<div class="note" style="margin-top:14px"><h3>Còn một khó khăn về kỷ luật</h3>' +
-          '<p style="margin:0"><b>Làm quen với kỷ luật của harness</b>: "evidence trước khi done", luôn đúng một feature ' +
-          '<span class="chip">in-progress</span>, và tôn trọng DAG. Ban đầu mất kha khá thời gian để quen — ' +
-          "nhưng chính nó giữ cho tốc độ AI không biến thành hỗn loạn.</p></div>",
-      );
-
-      /* ============================ SLIDE 14 — DIFFICULTIES (technical) ============================ */
-      slide(
-        tab("slide-14", "difficulties-2"),
-        '<div class="eyebrow">khó khăn — kỹ thuật &amp; cách xử lý</div>' +
-          '<h2 class="amb">Những bug tích hợp mà unit test không bắt được</h2>' +
-          "<table>" +
-          "<tr><th>Vấn đề</th><th>Cách xử lý</th></tr>" +
-          '<tr><td class="m"><b class="amb">Windows Defender</b> khóa file <span class="chip">test.exe</span> khi chạy <span class="chip">go test</span></td>' +
-          '<td class="m">init.sh chỉ bỏ qua đúng artifact dọn dẹp có tên đó, dừng lại ngay khi có FAIL thật</td></tr>' +
-          '<tr><td class="m"><b class="amb">TLS bị chặn/soi</b> làm npm lỗi (<span class="chip">UNABLE_TO_VERIFY_LEAF_SIGNATURE</span>)</td>' +
-          '<td class="m">chạy với <span class="chip">strict-ssl=false</span> theo <b>từng lần</b>, không đưa vào repo</td></tr>' +
-          '<tr><td class="m"><b class="amb">OAuth redirect_uri không khớp</b> — <span class="chip">APP_URL</span> dư dấu <span class="chip">/</span> → URL thành <span class="chip">//auth/callback</span></td>' +
-          '<td class="m">chuẩn hóa URL callback; thêm vào whitelist của Partner app</td></tr>' +
-          '<tr><td class="m"><b class="amb">CORS preflight 405</b> ở endpoint storefront (custom header <span class="chip">ngrok-skip-browser-warning</span>)</td>' +
-          '<td class="m">gắn CORS làm path middleware trên <span class="chip">/web/public</span> để trả lời OPTIONS → 204</td></tr>' +
-          '<tr><td class="m"><b class="amb">App Bridge chưa load → admin API trả 401</b> (thiếu session token)</td>' +
-          '<td class="m">thêm <span class="chip">&lt;meta name="shopify-api-key"&gt;</span> + <span class="chip">app-bridge.js</span> vào index.html</td></tr>' +
-          '<tr><td class="m"><b class="amb">Phục vụ SPA admin từ backend</b> — App URL báo "Cannot GET /"</td>' +
-          '<td class="m">backend serve SPA đã build sau API/auth/health, kèm fallback route <span class="chip">/*</span></td></tr>' +
-          "</table>" +
-          '<p class="muted" style="margin-top:10px"><b>Cách xử lý chung:</b> dùng systematic-debugging (act → verify → feedback), ' +
-          'đọc tài liệu Shopify, hỏi AI, và để <span class="chip">init.sh</span> làm "người kiểm" tách khỏi "người làm".</p>',
+        tab("slide-09", "khó-khăn"),
+        '<div class="eyebrow">[5] khó khăn &amp; cách xử lý</div>' +
+          '<h2 class="amb">Cái khó nằm ở quy trình &amp; làm quen, không ở từng dòng code</h2>' +
+          '<div class="grid g2">' +
+          '<div class="card"><h3 class="amb">Chưa quen dựng harness</h3>' +
+          '<p style="font-size:15px;margin:.3em 0">Lần đầu làm: biết tên 5 file lõi, nhưng để chúng "ăn khớp" thành một bộ máy vận hành trơn tru thì còn lúng túng.</p></div>' +
+          '<div class="card"><h3 class="amb">Khó phối hợp các kiến thức</h3>' +
+          '<p style="font-size:15px;margin:.3em 0">Planning, prompt/context engineering, guardrails/hooks, TDD/verification, MCP, subagents — hiểu từng mảnh, nhưng ghép thành một luồng liền mạch thì rối.</p></div>' +
+          '<div class="card"><h3 class="amb">Planning quá nhiều công đoạn</h3>' +
+          '<p style="font-size:15px;margin:.3em 0">Brainstorm → docs → user-stories → phân loại → DAG: nhiều bước nối nhau, mới làm dễ bị ngợp và lạc giữa các công đoạn.</p></div>' +
+          '<div class="card"><h3 class="amb">Shopify app từ con số 0</h3>' +
+          '<p style="font-size:15px;margin:.3em 0">Chưa thuần thục setup from scratch: OAuth, App Bridge, embedded admin, theme app extension đều mới — vừa học khái niệm vừa lắp cho chạy.</p></div>' +
+          "</div>" +
+          '<div class="note" style="margin-top:14px"><h3>Cách xử lý</h3>' +
+          '<p style="margin:0">Đi chậm mà chắc theo kỷ luật harness: mỗi lúc đúng một feature, "có bằng chứng mới done", bám tài liệu &amp; để <span class="chip">init.sh</span> kiểm lại — nhờ vậy cái rối ban đầu dần thành quy trình quen tay.</p></div>',
       );
 
       /* ============================ SLIDE 15 — LESSONS ============================ */
       slide(
-        tab("slide-15", "lessons"),
-        '<div class="eyebrow">bài học rút ra</div>' +
+        tab("slide-10", "bài-học"),
+        '<div class="eyebrow">[6] bài học rút ra</div>' +
           "<h2>Những điều mang sang dự án sau</h2>" +
           '<div class="grid g2">' +
           '<div class="why"><h3>Evidence trước khi done</h3>' +
@@ -1019,36 +908,24 @@
           "</div>",
       );
 
-      /* ============================ SLIDE 16 — DELIVERABLES ============================ */
-      slide(
-        tab("slide-16", "deliverables"),
-        '<div class="eyebrow">sản phẩm bàn giao &amp; liên kết</div>' +
-          '<h2><span class="pmt">$</span> ls deliverables/</h2>' +
-          '<div class="kv" style="font-size:16px;grid-template-columns:auto 1fr;gap:12px 18px">' +
-          '<span class="key">repo</span><span><a href="https://github.com/nhs21202/sonnh-AI-capstone-project" style="color:inherit">github.com/nhs21202/sonnh-AI-capstone-project</a></span>' +
-          '<span class="key">demo / dev-store</span><span>sonnh-dev-store-3.myshopify.com (cài thật qua OAuth)</span>' +
-          '<span class="key">slide deck</span><span>presentation/index.html (deck này — self-contained)</span>' +
-          '<span class="key">ghi chú AI/harness</span><span>present.md — bản ghi quy trình làm việc</span>' +
-          '<span class="key">file harness</span><span>AGENTS.md · CLAUDE.md · feature_list.json · progress.md · init.sh · session-handoff.md</span>' +
-          "</div>" +
-          '<div class="note" style="margin-top:18px"><h3>Kịch bản demo trực tiếp</h3>' +
-          '<p style="margin:0">Tạo hai thanh → bật một thanh → mở storefront → thấy nó + đồng hồ đang chạy → ' +
-          "bật thanh còn lại → reload (storefront đổi thanh) → đặt hạn gần → xem nó hết hạn và biến mất.</p></div>",
-      );
+      /* SLIDE 16 (deliverables) đã gộp vào slide Kết quả (08); kịch bản demo chuyển sang slide kết thúc. */
 
-      /* ============================ SLIDE 17 — CLOSING / Q&A ============================ */
+      /* ============================ SLIDE 11 — CLOSING / Q&A ============================ */
       slide(
-        tab("slide-17", "q-and-a"),
+        tab("slide-11", "q-and-a"),
         '<div class="body title-body" style="padding:0">' +
           '<div class="eyebrow">kết thúc deck</div>' +
           '<h2 style="font-size:46px">Cảm ơn — mời đặt câu hỏi</h2>' +
           '<p class="lead" style="max-width:760px">Announcement Bar App: một Shopify app 3 tầng chạy được, xây dựng bằng một ' +
           'AI harness kỷ luật — kế hoạch là một DAG, guardrails là code, và có bằng chứng trước khi "done".<span class="cursor"></span></p>' +
-          '<div class="term" style="margin-top:20px;max-width:560px"><pre>' +
-          '<span class="p">~/announcement-bar-app $</span> <span class="o">git log --oneline -1</span>\n' +
-          '<span class="o">a1002cd harness</span>\n' +
+          '<div class="note" style="margin-top:16px;max-width:760px"><h3>Kịch bản demo trực tiếp</h3>' +
+          '<p style="margin:0">Tạo hai thanh → bật một thanh → mở storefront thấy nó + đồng hồ chạy → ' +
+          "bật thanh còn lại → reload (storefront đổi thanh) → đặt hạn gần → xem nó hết hạn &amp; biến mất.</p></div>" +
+          '<div class="term" style="margin-top:16px;max-width:560px"><pre>' +
+          '<span class="p">~/announcement-bar-app $</span> <span class="o">bash init.sh</span>\n' +
+          '<span class="ok">================ HARNESS GREEN ================</span>\n' +
           '<span class="p">~/announcement-bar-app $</span> <span class="ok">_</span><span class="cursor"></span></pre></div>' +
-          '<div class="author"><span class="badge">người trình bày: <b>sonnh</b></span>' +
+          '<div class="author"><span class="badge">người trình bày: <b>Nguyễn Hoa Sơn</b></span>' +
           '<span class="badge">Khóa học AI Coding — Đồ án cuối khóa</span></div>' +
           "</div>",
         'init.sh: <span class="ok">GREEN</span> · cảm ơn!',
