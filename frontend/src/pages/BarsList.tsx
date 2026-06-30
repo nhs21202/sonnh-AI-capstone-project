@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Page,
@@ -21,7 +21,6 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { fetchBars, applyToggle } from "../store/announcementBarSlice";
 import { barsRepo } from "../api/AnnouncementBarRepository";
 import { Toggle } from "../components/Toggle";
-import { filterSortBars, paginate } from "../lib/barList";
 import type { RootState, AppDispatch } from "../store/store";
 import type { Bar, BarInput } from "../types";
 
@@ -64,35 +63,39 @@ const sortOptions: { label: string; value: `${string} asc` | `${string} desc`; d
 
 export function BarsList({ onAdd, onEdit }: { onAdd: () => void; onEdit: (bar: Bar) => void }) {
   const dispatch = useDispatch<AppDispatch>();
-  const { items, loading, error } = useSelector((s: RootState) => s.bars);
+  const { items, total, totalPages, loading, error } = useSelector((s: RootState) => s.bars);
   const shopify = useAppBridge() as unknown as { toast: { show: (m: string, o?: { isError?: boolean }) => void } };
   const [toggleError, setToggleError] = useState<string | null>(null);
 
-  // Search / filter / sort / pagination state
+  // Search / filter / sort / pagination state. Search is debounced into `debouncedQuery` so typing
+  // doesn't fire a request per keystroke; filtering/sorting/paginating all happen on the server.
   const [queryValue, setQueryValue] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [sortSelected, setSortSelected] = useState<string[]>(["title asc"]);
   const { mode, setMode } = useSetIndexFiltersMode();
   const [page, setPage] = useState(1);
 
+  const sort = sortSelected[0] ?? "title asc";
+
+  // Debounce the search box; a new term always returns to page 1.
   useEffect(() => {
-    dispatch(fetchBars());
-  }, [dispatch]);
+    const t = setTimeout(() => {
+      setDebouncedQuery(queryValue);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [queryValue]);
 
-  const activeCount = items.filter((b) => b.enabled).length;
+  // Single source of truth for the current query, so the fetch effect and manual reloads agree.
+  const reload = useCallback(() => {
+    dispatch(fetchBars({ q: debouncedQuery, status: statusFilter, sort, page, pageSize: PAGE_SIZE }));
+  }, [dispatch, debouncedQuery, statusFilter, sort, page]);
 
-  // Filter (search title/message + status) then sort — pure logic in lib/barList.ts.
-  const filtered = useMemo(
-    () => filterSortBars(items, { query: queryValue, status: statusFilter, sort: sortSelected[0] ?? "title asc" }),
-    [items, queryValue, statusFilter, sortSelected],
-  );
-
-  // Reset to the first page whenever the result set changes.
+  // Fetch a page from the server whenever any list parameter changes (incl. on mount).
   useEffect(() => {
-    setPage(1);
-  }, [queryValue, statusFilter, sortSelected]);
-
-  const { items: pageItems, totalPages, currentPage } = paginate(filtered, page, PAGE_SIZE);
+    reload();
+  }, [reload]);
 
   // If the current page no longer exists (e.g. the last row on a page was deleted), step back.
   useEffect(() => {
@@ -101,7 +104,7 @@ export function BarsList({ onAdd, onEdit }: { onAdd: () => void; onEdit: (bar: B
 
   async function handleDelete(id: number) {
     await barsRepo.remove(id);
-    dispatch(fetchBars());
+    reload();
     shopify.toast.show("Bar deleted");
   }
 
@@ -115,7 +118,7 @@ export function BarsList({ onAdd, onEdit }: { onAdd: () => void; onEdit: (bar: B
       await barsRepo.update(bar.id, toInput(bar, next));
       shopify.toast.show(next ? "Bar activated" : "Bar deactivated");
     } catch (e) {
-      dispatch(fetchBars());
+      reload();
       setToggleError(`Couldn't ${next ? "activate" : "deactivate"} “${bar.title}”: ${errMessage(e)}`);
     }
   }
@@ -133,24 +136,31 @@ export function BarsList({ onAdd, onEdit }: { onAdd: () => void; onEdit: (bar: B
             { label: "Draft", value: "draft" },
           ]}
           selected={statusFilter}
-          onChange={setStatusFilter}
+          onChange={(v) => {
+            setStatusFilter(v);
+            setPage(1);
+          }}
           allowMultiple
         />
       ),
       shortcut: true,
     },
   ];
+  const clearStatus = () => {
+    setStatusFilter([]);
+    setPage(1);
+  };
   const appliedFilters = statusFilter.length
     ? [
         {
           key: "status",
           label: `Status: ${statusFilter.map((s) => (s === "active" ? "Active" : "Draft")).join(", ")}`,
-          onRemove: () => setStatusFilter([]),
+          onRemove: clearStatus,
         },
       ]
     : [];
 
-  const rows = pageItems.map((bar, index) => (
+  const rows = items.map((bar, index) => (
     <IndexTable.Row id={String(bar.id)} key={bar.id} position={index}>
       <IndexTable.Cell>
         <Text as="span" fontWeight="semibold">
@@ -190,22 +200,22 @@ export function BarsList({ onAdd, onEdit }: { onAdd: () => void; onEdit: (bar: B
     </IndexTable.Row>
   ));
 
+  const hasFilters = debouncedQuery.trim() !== "" || statusFilter.length > 0;
+  const clearAll = () => {
+    setStatusFilter([]);
+    setQueryValue("");
+    setPage(1);
+  };
   const emptyStateImage = "https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png";
   const emptyMarkup =
-    items.length === 0 ? (
+    total === 0 && !hasFilters ? (
       <EmptyState heading="Create your first announcement bar" action={{ content: "Add bar", onAction: onAdd }} image={emptyStateImage}>
         <p>Show a message or countdown at the top of your storefront.</p>
       </EmptyState>
     ) : (
       <EmptyState
         heading="No bars match your search or filters"
-        action={{
-          content: "Clear filters",
-          onAction: () => {
-            setStatusFilter([]);
-            setQueryValue("");
-          },
-        }}
+        action={{ content: "Clear filters", onAction: clearAll }}
         image={emptyStateImage}
       >
         <p>Try a different search term or remove the filters.</p>
@@ -240,13 +250,13 @@ export function BarsList({ onAdd, onEdit }: { onAdd: () => void; onEdit: (bar: B
                 onQueryClear={() => setQueryValue("")}
                 sortOptions={sortOptions}
                 sortSelected={sortSelected}
-                onSort={setSortSelected}
+                onSort={(v) => {
+                  setSortSelected(v);
+                  setPage(1);
+                }}
                 filters={filters}
                 appliedFilters={appliedFilters}
-                onClearAll={() => {
-                  setStatusFilter([]);
-                  setQueryValue("");
-                }}
+                onClearAll={clearAll}
                 mode={mode}
                 setMode={setMode}
                 tabs={[]}
@@ -256,7 +266,7 @@ export function BarsList({ onAdd, onEdit }: { onAdd: () => void; onEdit: (bar: B
               />
               <IndexTable
                 resourceName={{ singular: "bar", plural: "bars" }}
-                itemCount={pageItems.length}
+                itemCount={items.length}
                 selectable={false}
                 emptyState={emptyMarkup}
                 headings={[
@@ -269,27 +279,25 @@ export function BarsList({ onAdd, onEdit }: { onAdd: () => void; onEdit: (bar: B
               >
                 {rows}
               </IndexTable>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  padding: "12px 16px",
-                  borderTop: "1px solid #e1e3e5",
-                }}
-              >
-                <Text as="span" tone="subdued">{`${filtered.length} of ${items.length} bars · ${activeCount} active`}</Text>
-                {totalPages > 1 && (
+              {totalPages > 1 && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                    padding: "12px 16px",
+                    borderTop: "1px solid #e1e3e5",
+                  }}
+                >
                   <Pagination
-                    hasPrevious={currentPage > 1}
+                    hasPrevious={page > 1}
                     onPrevious={() => setPage((p) => Math.max(1, p - 1))}
-                    hasNext={currentPage < totalPages}
+                    hasNext={page < totalPages}
                     onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    label={`Page ${currentPage} of ${totalPages}`}
+                    label={`Page ${page} of ${totalPages}`}
                   />
-                )}
-              </div>
+                </div>
+              )}
             </>
           )}
         </Card>

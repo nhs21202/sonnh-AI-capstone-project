@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"strconv"
+	"strings"
+
 	"announcementbar/internal/models"
 	"announcementbar/internal/validate"
 
@@ -11,14 +14,109 @@ import (
 func okEnvelope(data interface{}) fiber.Map { return fiber.Map{"error": false, "msg": "success", "data": data} }
 func errEnvelope(msg string) fiber.Map      { return fiber.Map{"error": true, "msg": msg, "data": nil} }
 
-// ListBars returns the shop's bars, newest first (empty array if none).
+const (
+	defaultPageSize = 10
+	maxPageSize     = 100
+)
+
+// escapeLike neutralizes LIKE wildcards in user input so a literal "%" or "_" can't widen the
+// search (backslash is MySQL's default LIKE escape char).
+func escapeLike(s string) string {
+	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
+}
+
+// atoiDefault parses s, falling back to def on any non-numeric/empty value.
+func atoiDefault(s string, def int) int {
+	if n, err := strconv.Atoi(s); err == nil {
+		return n
+	}
+	return def
+}
+
+// sortClause maps a client "<field> <dir>" string to a safe ORDER BY. Only whitelisted fields and
+// directions are ever interpolated — the raw sort param never reaches SQL (prevents injection).
+// Bars without a countdown always sort last; ties break by title for a stable order.
+func sortClause(sort string) string {
+	parts := strings.Fields(sort)
+	field, dir := "title", "asc"
+	if len(parts) >= 1 {
+		switch parts[0] {
+		case "title", "status", "countdown":
+			field = parts[0]
+		}
+	}
+	if len(parts) >= 2 && parts[1] == "desc" {
+		dir = "desc"
+	}
+	switch field {
+	case "status":
+		// "status asc" means active-first (enabled rows on top), so invert to enabled DESC.
+		if dir == "asc" {
+			return "enabled DESC, title ASC"
+		}
+		return "enabled ASC, title ASC"
+	case "countdown":
+		return "countdown_end_at IS NULL, countdown_end_at " + dir + ", title ASC"
+	default:
+		return "title " + dir
+	}
+}
+
+// ListBars returns one page of the shop's bars after applying search (q), a status filter, and a
+// whitelisted sort. The meta block carries the pagination state for the admin list UI.
 func ListBars(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		bars := []models.AnnouncementBar{}
-		if err := db.Where("shop = ?", c.Params("shop")).Order("created_at DESC").Find(&bars).Error; err != nil {
+		shop := c.Params("shop")
+
+		q := db.Model(&models.AnnouncementBar{}).Where("shop = ?", shop)
+		if term := strings.TrimSpace(c.Query("q")); term != "" {
+			like := "%" + escapeLike(term) + "%"
+			q = q.Where("title LIKE ? OR message LIKE ?", like, like)
+		}
+		switch c.Query("status") {
+		case "active":
+			q = q.Where("enabled = ?", true)
+		case "draft":
+			q = q.Where("enabled = ?", false)
+		}
+
+		var total int64
+		if err := q.Count(&total).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(errEnvelope("db error"))
 		}
-		return c.JSON(okEnvelope(bars))
+
+		page := atoiDefault(c.Query("page"), 1)
+		if page < 1 {
+			page = 1
+		}
+		pageSize := atoiDefault(c.Query("page_size"), defaultPageSize)
+		if pageSize < 1 {
+			pageSize = defaultPageSize
+		}
+		if pageSize > maxPageSize {
+			pageSize = maxPageSize
+		}
+		totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
+		if totalPages < 1 {
+			totalPages = 1
+		}
+
+		bars := []models.AnnouncementBar{}
+		if err := q.Order(sortClause(c.Query("sort"))).
+			Limit(pageSize).Offset((page - 1) * pageSize).
+			Find(&bars).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(errEnvelope("db error"))
+		}
+
+		return c.JSON(fiber.Map{
+			"error": false, "msg": "success", "data": bars,
+			"meta": fiber.Map{
+				"total":       total,
+				"page":        page,
+				"page_size":   pageSize,
+				"total_pages": totalPages,
+			},
+		})
 	}
 }
 

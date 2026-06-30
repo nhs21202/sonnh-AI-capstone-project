@@ -20,7 +20,7 @@ Given/When/Then with explicit acceptance criteria (AC). Each story is classified
 | S8 | Public endpoint (server gate)  | COMPLEX  | Single active + not-expired gate; shop isolation.              |
 | S9 | Storefront render + countdown  | COMPLEX  | Bundle/theme wiring; flicker; client ticker (one active bar).  |
 | S10| Live preview in admin          | DISCUSS  | Resolved → live-ticking, last & cuttable (Q4, feat-008).      |
-| S11| List saved bars                | NOW      | Index list of the shop's bars with an Active badge.            |
+| S11| List + search/filter/sort/page | NOW      | Index list of the shop's bars (Active badge) with server-side search/filter/sort/pagination. |
 | S12| Create a bar                   | NOW      | "Add bar" → new draft, defaults `enabled:false`.               |
 | S13| Edit a bar                     | NOW      | Open a saved bar in the editor and update it.                  |
 | S14| Delete a bar                   | NOW      | Remove a saved bar; deleting the active one clears the storefront. |
@@ -112,13 +112,15 @@ NOW → execute directly. COMPLEX → see `complex-cases.md`. DISCUSS → see `q
   ticker logic. Per the Q4 decision this is the **last** feature (`feat-008`) and is **cuttable** —
   if time runs short, cutting it leaves the static preview from S5/feat-005 intact.
 
-## S11 — List saved bars (NOW)
+## S11 — List + search/filter/sort/paginate saved bars (NOW)
 - **GIVEN** a shop with zero or more saved bars
-- **WHEN** the merchant opens the app index
-- **THEN** they see a list of their bars (newest first) with title, an **Active** badge on the
-  enabled one, countdown end, and a message preview
-- **AC:** the list shows all the shop's bars and only that shop's; the active bar is clearly
-  badged; an empty shop shows an empty state with an **Add bar** call to action.
+- **WHEN** the merchant opens the app index and uses the search box, status filter, sort, or pager
+- **THEN** they see one page of their bars with title, an **Active** badge on the enabled one,
+  countdown end, and a message preview — re-queried from the server on each change
+- **AC:** the list shows only that shop's bars; **search** (`q`) matches title OR message, **status**
+  filters active/draft, **sort** orders by title/status/countdown end, and results are **paginated**
+  10 per page — all computed **server-side** (`GET …/:shop?q&status&sort&page`, `meta` pagination);
+  the active bar is clearly badged; an empty shop shows an empty state with an **Add bar** CTA.
 
 ## S12 — Create a bar (NOW)
 - **GIVEN** the merchant is on the index list

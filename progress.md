@@ -6,7 +6,7 @@ sessions (alongside `session-handoff.md`). Keep entries short and factual.
 
 ## Current status (2026-06-29)
 
-**All 8 features DONE.** `bash init.sh` → **HARNESS GREEN (9/9)**: backend `go test`, frontend 67
+**All 8 features DONE.** `bash init.sh` → **HARNESS GREEN (9/9)**: backend `go test`, frontend 51
 vitest, storefront 5 vitest, all builds 0. Feature state (mirrors `.claude/feature_list.json`):
 
 | Feature | What | Status |
@@ -145,30 +145,32 @@ done; frontend-only; no git.**
     `test` block (jsdom env + setup); `src/test/setup.ts` (jest-dom matchers + RTL `afterEach(cleanup)`
     + `matchMedia`/`ResizeObserver` polyfills); `src/test/testUtils.tsx` (`renderWithProviders` + `makeStore`);
     `src/test/factories.ts` (`makeBar`).
-  - **Refactor (behavior-preserving):** extracted the list search/sort/paginate logic out of `BarsList.tsx`
-    into pure `lib/barList.ts` (`filterSortBars`, `paginate`, `endValue`).
+  - **List querying:** the bars list drives **search / filter / sort / pagination server-side** —
+    `AnnouncementBarRepository.list(params)` maps `q/status/sort/page/page_size` into the request and
+    the backend `ListBars` query returns one page + a `meta` block; the admin holds only the current page.
   - **Verify harness:** `init.sh` steps 8/9 now run the frontend/storefront `npm test` + build (parity
     with the backend `go test` step); `AGENTS.md` §6 verify commands corrected to the standalone
     `npm test` (the tiers are not npm workspaces). Also fixed a latent `set -e` bug in step 7 — a bare
     `out=$(go test)` assignment aborted before the Windows `.test.exe` flake tolerance could run; now
     `if out="$(go test ...)"; then rc=0; else rc=$?; fi`.
-  - **New/strengthened tests (67 total, +55):** `lib/barList.test.ts` (20), `lib/color.test.ts` (6),
+  - **New/strengthened tests (51 total):** `api/AnnouncementBarRepository.test.ts` (3: q/status/sort/page
+    → request params; status omitted when both/none; meta → typed result), `lib/color.test.ts` (6),
     `lib/countdown.test.ts` (7), `store/announcementBarSlice.test.ts` (6: applyToggle one-active;
-    fetchBars fulfilled/rejected/pending), `components/Toggle.test.tsx` (4: aria/keyboard/disabled),
+    fetchBars fulfilled/rejected/pending + pagination meta), `components/Toggle.test.tsx` (4: aria/keyboard/disabled),
     `pages/BarEditor.test.tsx` (7: invalid-submit BLOCKED ×4, valid create payload + store-local→UTC,
-    edit update-with-id, countdown reveal), `pages/BarsList.test.tsx` (4: pagination, optimistic toggle,
-    delete-steps-back, empty state), strengthened `lib/time.test.ts` (4: NY EDT, DST EST-vs-EDT,
-    Asia/Ho_Chi_Minh, invalid-input throws).
+    edit update-with-id, countdown reveal), `pages/BarsList.test.tsx` (5: server-driven render, Next
+    re-queries the page, optimistic toggle, delete + refetch, empty state), strengthened `lib/time.test.ts`
+    (4: NY EDT, DST EST-vs-EDT, Asia/Ho_Chi_Minh, invalid-input throws), `lib/barValidation.test.ts` (9).
 - **Verification (raw):**
   ```
   npx vitest run
-   ✓ src/lib/countdown.test.ts (7)   ✓ src/lib/color.test.ts (6)   ✓ src/lib/barList.test.ts (20)
+   ✓ src/lib/countdown.test.ts (7)   ✓ src/lib/color.test.ts (6)   ✓ src/api/AnnouncementBarRepository.test.ts (3)
    ✓ src/store/announcementBarSlice.test.ts (6)   ✓ src/lib/time.test.ts (4)   ✓ src/lib/barValidation.test.ts (9)
-   ✓ src/components/Toggle.test.tsx (4)   ✓ src/pages/BarsList.test.tsx (4)   ✓ src/pages/BarEditor.test.tsx (7)
+   ✓ src/components/Toggle.test.tsx (4)   ✓ src/pages/BarsList.test.tsx (5)   ✓ src/pages/BarEditor.test.tsx (7)
    Test Files  9 passed (9)
-        Tests  67 passed (67)
+        Tests  51 passed (51)
   tsc --noEmit -> 0 ; vite build -> 0 ; storefront webpack -> 0
-  bash init.sh -> HARNESS GREEN (9/9): backend go test ok; frontend 67 vitest; storefront 5 vitest; all builds 0.
+  bash init.sh -> HARNESS GREEN (9/9): backend go test ok; frontend 51 vitest; storefront 5 vitest; all builds 0.
   ```
 - **Two jsdom gaps fixed at the root (NOT by deleting assertions):** RTL auto-cleanup unregistered
   (Vitest globals off) → "multiple elements" → added `afterEach(cleanup)`; Polaris needs
@@ -176,9 +178,9 @@ done; frontend-only; no git.**
   `getByLabelText(/background color/i)` also matched the swatch button's aria-label → switched to
   `getByRole("textbox", …)`. No production code weakened; no real bug surfaced by the tests.
 - **Residual risks:** component tests mock `barsRepo` + App Bridge (no real network/App Bridge);
-  search/sort/filter is covered at the logic layer (`lib/barList.test.ts`), not driven through the
-  `IndexFilters` DOM (portal/popover under jsdom is brittle); `ApiClient`'s axios interceptor is left
-  untested.
+  search/sort/filter is covered at the **repository + slice** level (request params + `meta` mapping)
+  and via the `BarsList` re-query, not driven through the `IndexFilters` portal/popover DOM (brittle
+  under jsdom); `ApiClient`'s axios interceptor is left untested.
 - **Not verified / NOT done:** feat-005 stays **manual-verification** — the human signs off the live
   admin. No real-browser/E2E run.
 

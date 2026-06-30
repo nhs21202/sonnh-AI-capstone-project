@@ -31,7 +31,8 @@ order: **session/data model → backend admin API → public endpoint → admin 
 ## 2. Backend admin API (CRUD)
 
 - Routes under the `/api/v1` group, all behind `VerifyShopifyApi()`:
-  - `GET    /announcement-bars/:shop`     → `ListAnnouncementBars` (newest first)
+  - `GET    /announcement-bars/:shop`     → `ListAnnouncementBars` (server-side search `q` /
+    `status` filter / whitelisted `sort` / `page`+`page_size`; returns a `meta` pagination block)
   - `POST   /announcement-bars/:shop`     → `CreateAnnouncementBar` (→ 201)
   - `PUT    /announcement-bars/:shop/:id` → `UpdateAnnouncementBar` (→ 200)
   - `DELETE /announcement-bars/:shop/:id` → `DeleteAnnouncementBar` (→ 200)
@@ -44,9 +45,10 @@ order: **session/data model → backend admin API → public endpoint → admin 
 - **One-active invariant:** when a create/update sets `enabled = true`, the SAME transaction sets
   `enabled = false` on all OTHER bars of that shop, so exactly one stays active.
 - Return the standard `{ error, msg, data }` envelope.
-- Acceptance: create → list → update → delete round-trips; enabling one disables the others (assert
-  exactly one `enabled` per shop); mismatched `:shop` vs `dest` → 403; foreign `:id` → 404; invalid
-  body → 400. Covered by Go handler unit tests.
+- Acceptance: create → list → update → delete round-trips; the list applies `q`/`status`/`sort`
+  server-side and paginates with a correct `meta` (`total`/`page`/`page_size`/`total_pages`);
+  enabling one disables the others (assert exactly one `enabled` per shop); mismatched `:shop` vs
+  `dest` → 403; foreign `:id` → 404; invalid body → 400. Covered by Go handler unit tests.
 
 ## 3. Public storefront endpoint
 
@@ -65,11 +67,15 @@ order: **session/data model → backend admin API → public endpoint → admin 
 
 - Build the data layer: an `ApiClient` (axios wrapper with auth-header interceptor) and a
   `BaseRepository` (uniform result wrapping), then an `AnnouncementBarRepository`
-  (`url()=>"/announcement-bars"`, `list`, `create`, `update`, `remove`).
-- Add `announcementBarSlice` (`createAsyncThunk` list/create/update/delete, holding the collection)
-  → register in `store.ts`.
-- Build the **index list** (Polaris `IndexTable`/`ResourceList`): `title`, an **Active** badge on
-  the enabled bar, countdown end, message preview; primary **Add bar**; per-row Edit + Delete.
+  (`url()=>"/announcement-bars"`, `list(params)` → builds the `q/status/sort/page/page_size` query
+  and returns `{ items, total, page, pageSize, totalPages }`, `create`, `update`, `remove`).
+- Add `announcementBarSlice` (`createAsyncThunk` fetch/create/update/delete, holding the current
+  page + pagination meta) → register in `store.ts`.
+- Build the **index list** (Polaris `IndexTable` + `IndexFilters`): `title`, an **Active** badge on
+  the enabled bar, countdown end, message preview; primary **Add bar**; per-row Edit + Delete. The
+  `IndexFilters` bar drives **server-side** search (debounced ~300ms), a **Status** filter
+  (active/draft), sort (title/status/countdown end), and `Pagination` (10/page) — each change
+  re-queries the backend; the client never holds the full set.
 - Build the **per-bar editor** (Polaris `Page`/`Layout`/`Card`/`FormLayout`): **Title** field,
   Enabled toggle (enabling implies others deactivate — refetch the list to reflect it), `TextField`
   (message), color inputs (hex `TextField`; ColorPicker is an open question — `questions.md` Q5),
@@ -114,7 +120,10 @@ order: **session/data model → backend admin API → public endpoint → admin 
 
 - **Backend (Go unit tests):** public-handler shop-scoping, no-enabled-bar→null, expired→null,
   missing `shop`→400; admin anti-IDOR mismatch→403; foreign `:id`→404; validation→400; the
-  **one-active invariant** (enabling one disables the others — assert exactly one `enabled` per shop).
+  **one-active invariant** (enabling one disables the others — assert exactly one `enabled` per shop);
+  the **list query** — `q` search (title/message), `status` filter, `sort`, and pagination `meta`.
+- **Frontend (Vitest):** the repository maps `q/status/sort/page` into the request query string and
+  the `meta` envelope back into a typed result; the list re-queries the server on search/filter/sort/page.
 - **Storefront (unit tests):** remaining-time math, expiry boundary, all three formats.
 - **Manual:** the demo script above, with evidence captured.
 

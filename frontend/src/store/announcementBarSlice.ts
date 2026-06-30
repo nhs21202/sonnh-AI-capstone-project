@@ -1,16 +1,21 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import { barsRepo } from "../api/AnnouncementBarRepository";
-import type { Bar } from "../types";
+import type { Bar, BarListParams, BarListResult } from "../types";
 
-export const fetchBars = createAsyncThunk("bars/fetch", () => barsRepo.list());
+// `void` arg lets callers dispatch fetchBars() with no params (defaults to the first page, all bars).
+export const fetchBars = createAsyncThunk<BarListResult, BarListParams | void>("bars/fetch", (params) =>
+  barsRepo.list(params || {}),
+);
 
 interface BarsState {
   items: Bar[];
+  total: number;
+  totalPages: number;
   loading: boolean;
   error: string | null;
 }
 
-const initialState: BarsState = { items: [], loading: false, error: null };
+const initialState: BarsState = { items: [], total: 0, totalPages: 1, loading: false, error: null };
 
 const slice = createSlice({
   name: "bars",
@@ -33,7 +38,9 @@ const slice = createSlice({
       })
       .addCase(fetchBars.fulfilled, (s, a) => {
         s.loading = false;
-        s.items = a.payload;
+        s.items = a.payload.items;
+        s.total = a.payload.total;
+        s.totalPages = a.payload.totalPages;
       })
       .addCase(fetchBars.rejected, (s, a) => {
         s.loading = false;

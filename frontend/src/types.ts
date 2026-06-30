@@ -18,6 +18,25 @@ export interface Bar {
 // Fields the admin form sends (the server owns id/shop/timestamps).
 export type BarInput = Omit<Bar, "id" | "shop">;
 
+// Server-side list query. `status` mirrors the UI ChoiceList (any of "active"|"draft"); only a
+// single selection is sent to the server — both or none means "all".
+export interface BarListParams {
+  q?: string;
+  status?: string[];
+  sort?: string; // "<field> <dir>", field ∈ title | status | countdown
+  page?: number;
+  pageSize?: number;
+}
+
+// One page of bars plus the server's pagination meta.
+export interface BarListResult {
+  items: Bar[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 export const defaultBarInput = (): BarInput => ({
   title: "",
   enabled: false,

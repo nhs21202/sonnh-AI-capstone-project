@@ -52,7 +52,7 @@ thật**, không phải lời hứa.
 
 ## ✅ Kết quả
 
-- **8/8 feature** `done`; `bash init.sh` → **HARNESS GREEN (9/9)**: backend `go test`, frontend **67 Vitest**,
+- **8/8 feature** `done`; `bash init.sh` → **HARNESS GREEN (9/9)**: backend `go test`, frontend **51 Vitest**,
 storefront **5 Vitest**, cả ba tầng build sạch.
 - **Cài đặt live qua OAuth** trên dev store `sonnh-dev-store-3`; admin CRUD, public endpoint và thanh storefront đều
 chạy thật.
