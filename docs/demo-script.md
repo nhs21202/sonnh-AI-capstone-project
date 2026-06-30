@@ -25,7 +25,7 @@ Sanity check: open `<APP_URL>/health` → `{"status":"ok"}`; open `<APP_URL>/` i
 
 | # | Action | Where | Expected result |
 |---|--------|-------|-----------------|
-| 1 | Open the app from the store's Apps menu | Admin | Bars list renders (empty on a fresh store) |
+| 1 | Open the app from the store's Apps menu | Admin | Bars list renders (empty on a fresh store); once bars exist, the **search box / Status filter / sort / pager** each re-query the server (visible in Network as `GET …/:shop?q&status&sort&page`) |
 | 2 | **Add bar** → fill Title `Summer Sale`, Message `Summer sale — 20% off`, pick colors | Admin editor | Live preview updates **as you type**; required fields show `*` |
 | 3 | Leave it disabled, **Save** | Admin | Contextual save bar appears when dirty; saving returns to the list, bar shows **no** Active badge |
 | 4 | **Add bar** #2 → Title `Free Shipping`, Message `Free shipping over $50`, enable **Countdown**, set a deadline ~3 hours out, **Enable** the bar, **Save** | Admin editor | Validation passes; list now shows bar #2 with the **Active** badge |
@@ -73,11 +73,14 @@ ok  announcementbar/internal/validate
 
 What the suites cover:
 - **Backend (`go test ./...`)** — OAuth HMAC + session-token + shop validation; admin CRUD round-trip;
+  the **list query** (server-side `q` search, `status` filter, whitelisted `sort`, pagination `meta`);
   one-active invariant (`enabling one disables the others`); anti-IDOR (403 on `dest` mismatch);
   public endpoint (missing shop → 400, no/expired bar → `null`, Title never leaked, shop A ≠ shop B);
   **input validation** incl. title ≤120 / message ≤200 length rules.
 - **Frontend (`vitest`)** — store-timezone ⇄ UTC round-trip; `computeErrors` validation rules
-  (required, length, hex, future-deadline) mirroring the backend.
+  (required, length, hex, future-deadline) mirroring the backend; the bars-list **repository query
+  mapping** (`q/status/sort/page` → request, `meta` → typed result) and the server-driven list
+  (re-query on search/filter/sort/page).
 - **Storefront (`vitest`)** — countdown remaining-time math, the expiry boundary, all three formats.
 
 ---

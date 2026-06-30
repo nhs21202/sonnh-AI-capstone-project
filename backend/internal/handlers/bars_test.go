@@ -67,6 +67,128 @@ func boolStr(b bool) string {
 }
 func itoa(id uint) string { return strconv.FormatUint(uint64(id), 10) }
 
+// seedBar inserts a bar directly (bypassing the one-active invariant) so read-path tests can
+// control exactly which rows and statuses exist.
+func seedBar(t *testing.T, db *gorm.DB, title string, enabled bool, message string) {
+	t.Helper()
+	b := models.AnnouncementBar{
+		Shop: testShop, Title: title, Enabled: enabled, Message: message,
+		BackgroundColor: "#1A1A1A", TextColor: "#FFFFFF",
+		CountdownBgColor: "#000000", CountdownTextColor: "#FFFFFF", CountdownFormat: "dd:hh:mm:ss",
+	}
+	if err := db.Create(&b).Error; err != nil {
+		t.Fatalf("seedBar(%q): %v", title, err)
+	}
+}
+
+// metaInt reads env["meta"][key] as an int (JSON numbers decode to float64).
+func metaInt(t *testing.T, env map[string]any, key string) int {
+	t.Helper()
+	m, ok := env["meta"].(map[string]any)
+	if !ok {
+		t.Fatalf("response has no meta object: %v", env)
+	}
+	f, ok := m[key].(float64)
+	if !ok {
+		t.Fatalf("meta.%s missing or not a number: %v", key, m)
+	}
+	return int(f)
+}
+
+func dataLen(env map[string]any) int {
+	arr, _ := env["data"].([]any)
+	return len(arr)
+}
+
+func TestListBarsSearchMatchesTitleOrMessage(t *testing.T) {
+	if testing.Short() {
+		t.Skip("DB integration")
+	}
+	app, db := testApp(t)
+	base := "/api/v1/announcement-bars/" + testShop
+	seedBar(t, db, "Summer Sale", true, "Big discounts")
+	seedBar(t, db, "Winter Clearance", false, "Cold deals")
+	seedBar(t, db, "Spring Promo", false, "Flowers and sale") // matches via message
+
+	st, env := do(t, app, "GET", base+"?q=sale", "")
+	if st != 200 {
+		t.Fatalf("status = %d (env=%v)", st, env)
+	}
+	if n := dataLen(env); n != 2 {
+		t.Fatalf("q=sale returned %d rows, want 2 (title 'Summer Sale' + message '...sale')", n)
+	}
+	if got := metaInt(t, env, "total"); got != 2 {
+		t.Fatalf("meta.total = %d, want 2", got)
+	}
+}
+
+func TestListBarsStatusFilter(t *testing.T) {
+	if testing.Short() {
+		t.Skip("DB integration")
+	}
+	app, db := testApp(t)
+	base := "/api/v1/announcement-bars/" + testShop
+	seedBar(t, db, "Active One", true, "x")
+	seedBar(t, db, "Draft One", false, "x")
+	seedBar(t, db, "Draft Two", false, "x")
+
+	if _, env := do(t, app, "GET", base+"?status=active", ""); dataLen(env) != 1 {
+		t.Fatalf("status=active returned %d, want 1", dataLen(env))
+	}
+	if _, env := do(t, app, "GET", base+"?status=draft", ""); dataLen(env) != 2 {
+		t.Fatalf("status=draft returned %d, want 2", dataLen(env))
+	}
+}
+
+func TestListBarsSortTitleDesc(t *testing.T) {
+	if testing.Short() {
+		t.Skip("DB integration")
+	}
+	app, db := testApp(t)
+	base := "/api/v1/announcement-bars/" + testShop
+	seedBar(t, db, "Apple", false, "x")
+	seedBar(t, db, "Mango", false, "x")
+	seedBar(t, db, "Banana", false, "x")
+
+	_, env := do(t, app, "GET", base+"?sort=title%20desc", "")
+	arr, _ := env["data"].([]any)
+	if len(arr) != 3 {
+		t.Fatalf("got %d rows, want 3", len(arr))
+	}
+	first, _ := arr[0].(map[string]any)
+	if first["title"] != "Mango" {
+		t.Fatalf("sort=title desc first title = %v, want Mango", first["title"])
+	}
+}
+
+func TestListBarsPaginationMeta(t *testing.T) {
+	if testing.Short() {
+		t.Skip("DB integration")
+	}
+	app, db := testApp(t)
+	base := "/api/v1/announcement-bars/" + testShop
+	for _, name := range []string{"b1", "b2", "b3", "b4", "b5"} {
+		seedBar(t, db, name, false, "x")
+	}
+
+	_, env := do(t, app, "GET", base+"?page=1&page_size=2", "")
+	if n := dataLen(env); n != 2 {
+		t.Fatalf("page_size=2 returned %d rows, want 2", n)
+	}
+	if got := metaInt(t, env, "total"); got != 5 {
+		t.Fatalf("meta.total = %d, want 5", got)
+	}
+	if got := metaInt(t, env, "total_pages"); got != 3 {
+		t.Fatalf("meta.total_pages = %d, want 3 (ceil(5/2))", got)
+	}
+	if got := metaInt(t, env, "page"); got != 1 {
+		t.Fatalf("meta.page = %d, want 1", got)
+	}
+	if got := metaInt(t, env, "page_size"); got != 2 {
+		t.Fatalf("meta.page_size = %d, want 2", got)
+	}
+}
+
 func TestBarsCRUDRoundTrip(t *testing.T) {
 	if testing.Short() {
 		t.Skip("DB integration")

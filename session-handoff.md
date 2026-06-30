@@ -46,7 +46,7 @@ Read order: `AGENTS.md` (source of truth) → `.claude/feature_list.json` → `p
 - **Last verify status:** `bash init.sh` → **exit 0, HARNESS GREEN (1–9)**. Backend `go test ./...`
   all pass (config; DB integration; handlers incl. auth bad-HMAC → 401; shopify; `validate` incl. the
   new length + always-required-message rules).
-  Frontend: tsc 0, **67 vitest pass** (logic + slice + component tests), vite build 0.
+  Frontend: tsc 0, **51 vitest pass** (logic + repository query mapping + slice + component tests, incl. server-side list search/filter/sort/pagination), vite build 0.
   Storefront: 5 vitest pass, webpack 0. npm needs `npm_config_strict_ssl=false` on this network.
 - **Running process:** a dev backend is up on `127.0.0.1:5005` (serves the built admin from
   `frontend/dist`). Before recording the demo, restart it (`cd backend && go run .`) so it serves the

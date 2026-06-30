@@ -3,6 +3,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import reducer, { applyToggle, fetchBars } from "./announcementBarSlice";
 import { barsRepo } from "../api/AnnouncementBarRepository";
 import { makeBar } from "../test/factories";
+import type { Bar, BarListResult } from "../types";
 
 vi.mock("../api/AnnouncementBarRepository", () => ({
   barsRepo: { list: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn() },
@@ -14,6 +15,11 @@ function makeStore() {
   return configureStore({ reducer: { bars: reducer } });
 }
 
+// A server-style page result for the fetch thunk.
+function result(items: Bar[], over: Partial<BarListResult> = {}): BarListResult {
+  return { items, total: items.length, page: 1, pageSize: 10, totalPages: 1, ...over };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -21,6 +27,8 @@ beforeEach(() => {
 describe("applyToggle reducer (optimistic one-active)", () => {
   const base = () => ({
     items: [makeBar({ id: 1, enabled: true }), makeBar({ id: 2, enabled: false }), makeBar({ id: 3, enabled: false })],
+    total: 3,
+    totalPages: 1,
     loading: false,
     error: null as string | null,
   });
@@ -33,6 +41,8 @@ describe("applyToggle reducer (optimistic one-active)", () => {
   it("disabling a bar leaves the others untouched", () => {
     const twoActive = {
       items: [makeBar({ id: 1, enabled: true }), makeBar({ id: 2, enabled: true })],
+      total: 2,
+      totalPages: 1,
       loading: false,
       error: null as string | null,
     };
@@ -48,12 +58,14 @@ describe("applyToggle reducer (optimistic one-active)", () => {
 });
 
 describe("fetchBars thunk", () => {
-  it("fulfilled: populates items from the repo and clears loading", async () => {
-    mockedList.mockResolvedValue([makeBar({ id: 1 }), makeBar({ id: 2 })]);
+  it("fulfilled: populates items + pagination meta from the repo and clears loading", async () => {
+    mockedList.mockResolvedValue(result([makeBar({ id: 1 }), makeBar({ id: 2 })], { total: 5, totalPages: 3 }));
     const store = makeStore();
     await store.dispatch(fetchBars());
     const s = store.getState().bars;
     expect(s.items).toHaveLength(2);
+    expect(s.total).toBe(5);
+    expect(s.totalPages).toBe(3);
     expect(s.loading).toBe(false);
     expect(s.error).toBeNull();
     expect(mockedList).toHaveBeenCalledTimes(1);
@@ -70,7 +82,10 @@ describe("fetchBars thunk", () => {
   });
 
   it("pending: sets loading and clears any prior error", () => {
-    const s = reducer({ items: [], loading: false, error: "stale" }, { type: fetchBars.pending.type });
+    const s = reducer(
+      { items: [], total: 0, totalPages: 1, loading: false, error: "stale" },
+      { type: fetchBars.pending.type },
+    );
     expect(s.loading).toBe(true);
     expect(s.error).toBeNull();
   });

@@ -27,9 +27,10 @@ prepare promotions ahead of time and switch between them.
 
 ## Main use cases
 
-1. Merchant opens the embedded admin and sees a list of their saved bars; clicks **Add bar**,
-   gives it a title, types a message, picks background/text colors, and saves it as a draft
-   (new bars start disabled).
+1. Merchant opens the embedded admin and sees a list of their saved bars — which they can
+   **search, filter by status (active/draft), sort, and page through** (all handled server-side);
+   clicks **Add bar**, gives it a title, types a message, picks background/text colors, and saves it
+   as a draft (new bars start disabled).
 2. Merchant **activates** one bar → it appears site-wide on the storefront; any previously active
    bar is automatically deactivated (exactly one live bar).
 3. Merchant enables a countdown on a bar, sets a deadline (in store timezone) and countdown

@@ -86,12 +86,23 @@ included) — never trust the path/query param. Mismatch → `403 { error:true, 
 Additionally, any `:id` MUST belong to that shop; a bar id that isn't this shop's →
 `404 { error:true, msg:"not found" }` (a merchant must never read/edit/delete another shop's bar).
 
-### 3.1 Admin — list bars
+### 3.1 Admin — list bars (server-side search / filter / sort / pagination)
 ```
-GET /api/v1/announcement-bars/:shop
+GET /api/v1/announcement-bars/:shop?q=&status=&sort=&page=&page_size=
 ```
-- Returns the shop's bars, **newest first**. `200 { error:false, msg:"success", data: [<bar>...] }`.
-  A shop with no bars yet returns an empty array `[]` (no defaults object).
+- Returns **one page** of the shop's bars after applying, all **on the server**:
+  - `q` — case-insensitive search across `title` OR `message` (omitted ⇒ no search).
+  - `status` — `active` | `draft` (omitted ⇒ all). Filters on `enabled`.
+  - `sort` — `"<field> <dir>"`, `field ∈ title | status | countdown`, `dir ∈ asc | desc`
+    (default `title asc`). The field is **whitelisted** before it reaches SQL — the raw param is
+    never interpolated into `ORDER BY` (injection-safe). Bars without a countdown sort last.
+  - `page` / `page_size` — 1-based page and page size (default `page_size = 10`, clamped to ≤ 100).
+- `200 { error:false, msg:"success", data: [<bar>...], meta: {…} }`. The `meta` block carries the
+  pagination state the admin list UI needs:
+  ```json
+  "meta": { "total": 23, "page": 1, "page_size": 10, "total_pages": 3 }
+  ```
+  A shop with no bars yet returns an empty array `[]` with `total: 0`.
 
 ### 3.2 Admin — create bar
 ```
@@ -186,9 +197,13 @@ Flow:
 ## 5. Admin UI
 
 Two Polaris views under the app:
-- **Index list** (route `/announcement-bars`): an `IndexTable`/`ResourceList` of the shop's saved
-  bars showing `title`, an **"Active" badge** on the one enabled bar, the countdown end, and a
-  message preview. Primary action **Add bar**; each row has per-row **Edit** and **Delete**.
+- **Index list** (route `/announcement-bars`): an `IndexTable` of the shop's saved bars showing
+  `title`, an **"Active" badge** on the one enabled bar, the countdown end, and a message preview.
+  Primary action **Add bar**; each row has per-row **Edit** and **Delete**. A Polaris `IndexFilters`
+  bar drives **server-side** search/filter/sort/pagination: a search box (debounced ~300ms, maps to
+  `q`), a **Status** filter (`active`/`draft` → `status`), sort options for title/status/countdown
+  end (→ `sort`), and `Pagination` (10 per page → `page`/`page_size`). Every change re-queries
+  `GET …/:shop?q&status&sort&page` — the client holds only the current page, never the full set.
 - **Per-bar editor** (routes `/announcement-bars/new` and `/announcement-bars/:id`): the per-bar
   fields **plus Title** — Enabled toggle (enabling implies the other bars deactivate; reflect the
   server invariant by refetching the list), Message (`TextField`), background & text colors (each a
@@ -199,9 +214,11 @@ Two Polaris views under the app:
   countdown ticks live every second (resolved — this is feat-008).
 - **Save bar:** App Bridge contextual save bar (`<SaveBar>`); dirty-state via `JSON.stringify`
   compare; navigating away while dirty triggers `saveBar.leaveConfirmation()`.
-- **Data layer:** `AnnouncementBarRepository` (`url() => "/announcement-bars"`, `list(shop)`,
-  `create(shop, data)`, `update(shop, id, data)`, `remove(shop, id)`) + an `announcementBarSlice`
-  (`createAsyncThunk` list/create/update/delete, holding the collection) registered in `store.ts`.
+- **Data layer:** `AnnouncementBarRepository` (`url() => "/announcement-bars"`,
+  `list(params)` → builds the `q/status/sort/page/page_size` query string and returns a typed
+  `{ items, total, page, pageSize, totalPages, activeCount }`, `create`, `update`, `remove`) + an
+  `announcementBarSlice` (`createAsyncThunk` fetch/create/update/delete, holding the current page +
+  pagination meta) registered in `store.ts`.
   Nav `<Link>` in the app nav, routes in the app router.
 - **Validation (native React state, inline `TextField` errors):** title required; message required
   & ≤200 chars (always required); if countdown enabled, deadline required and must be in the future at
@@ -215,7 +232,7 @@ Two Polaris views under the app:
 |------------|-----------------------------------|-----------------------------------------------------------|
 | Backend    | `AnnouncementBar` GORM model      | Many rows per shop; tenant key `shop`; admin-facing `title`. |
 | Backend    | `VerifyShopifyApi` middleware     | HMAC verification + anti-IDOR shop-match + per-bar `:id` ownership helper. |
-| Backend    | Admin controller (CRUD)           | Authenticated list/create/update/delete + one-active invariant (transaction). |
+| Backend    | Admin controller (CRUD)           | Authenticated list (server-side search/filter/sort/pagination + meta) / create / update / delete + one-active invariant (transaction). |
 | Backend    | Public controller (GET)           | Server-gated, shop-scoped read of the single active bar.  |
 | Admin      | `ApiClient` / `BaseRepository`    | Axios client + uniform result wrapping + auth headers.    |
 | Admin      | Index list + per-bar editor       | The bar list (Active badge), editor form, preview, activate, and dirty-state save flow. |

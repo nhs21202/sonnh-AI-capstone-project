@@ -48,7 +48,8 @@ have to repeat in every prompt — scope, rules, verification, and continuity be
 I asked the AI to brainstorm **one question at a time** and to *push back* on scope rather than
 agree with everything. We pinned down a deliberately lean MVP:
 - Many saved bars per shop with **exactly one active at a time** (full CRUD admin; the storefront
-  renders only the single active bar). No stacking, no per-page targeting.
+  renders only the single active bar). No stacking, no per-page targeting. The admin list is
+  **server-side searchable / filterable / sortable / paginated** so the set scales past one screen.
 - A **fixed-date countdown** as the hero feature, with per-bar enable/activate.
 - On expiry: **hide the whole bar**.
 - A live admin preview, marked as the *last and cuttable* feature.
@@ -219,16 +220,14 @@ Honest limitations (stated, not hidden):
 - **One-active is an app-layer invariant, not a DB constraint.** MySQL has no filtered-unique index
   for "one enabled per shop", so it's enforced inside a transaction; a rare concurrent double-enable
   race is theoretically possible. A test asserts the invariant.
-- **No pagination/search on the bars list** — deliberate YAGNI for a small, merchant-managed set;
-  deferred behind a documented decision rather than built speculatively.
 - **Stateless by design** — the app never calls the Admin API and discards the OAuth token, so it
   can't read theme state (e.g. whether the app-embed is actually toggled on); the merchant is
   guided to the theme editor instead.
 - **Demo runs on a dev store via an ngrok tunnel**, not a production deployment; frontend component
   tests mock App Bridge + the network, with the live walkthrough covering the real browser path.
 
-**What I'd do next:** pagination + search on the list, an automated end-to-end (real-browser) test,
-an "enable the app embed" guidance banner, and a production deployment.
+**What I'd do next:** an automated end-to-end (real-browser) test, an "enable the app embed"
+guidance banner, and a production deployment.
 
 - **The story is the deliverable too.** Beyond the code, the *workflow* — disciplined brainstorming,
   explicit decisions, scope-as-a-DAG, tested guardrails, evidence-before-done, honest handoffs — is
